@@ -1,0 +1,6 @@
+*.elc
+Makefile
+*.log
+doc/auto
+.*~
+*~

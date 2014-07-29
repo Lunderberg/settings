@@ -1,0 +1,7 @@
+[user]
+	name = Eldritch Cheese
+	email = eldritch.cheese@gmail.com
+[core]
+	editor = emacs -nw
+[push]
+	default = simple

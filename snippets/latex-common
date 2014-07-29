@@ -1,0 +1,46 @@
+% -*- latex -*-
+
+\usepackage{amsmath} %Provides align environment
+\usepackage[shortlabels]{enumitem} %Custom labels in enumeration environments
+\usepackage{units} %unit, unitfrac, and nicefrac commands
+\usepackage{fullpage}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{graphicx} %Include pictures
+\usepackage{listings} %Input of source code
+\usepackage{etoolbox} %For sane if statements
+\usepackage{hyperref}
+\usepackage{multicol} %Usage: \begin{multicols}{N} TEXT \end{multicols}
+
+\newcommand{\iso}[2]{\ensuremath{{{}^{#2}\textrm{#1}}}}
+\newcommand{\half}{{\nicefrac{1}{2}}}
+\newcommand{\third}{{\nicefrac{1}{3}}}
+\newcommand{\eric}[1]{{\color{red} #1 \emph{-Eric}}}
+\newcommand{\pic}[2][0.75]{\includegraphics[width=#1\textwidth]{\jobname_inc/#2}}
+\newcommand{\mat}[1]{\overset{\rightleftharpoons}{#1}}
+\newcommand{\pmat}[1]{\begin{pmatrix}#1\end{pmatrix}}
+\newcommand{\parder}[2]{{\frac{\partial #1}{\partial #2}}}
+\newcommand{\parderc}[2]{{\left.\parder{#1}{#2}\right|}}
+\newcommand{\e}[1]{\ensuremath{\cdot 10^{#1}}}
+
+\newcommand{\braket}[1]{\langle#1\rangle}
+\newcommand{\bra}[1]{\left\langle #1 \right|}
+\newcommand{\ket}[1]{\left| #1 \right\rangle}
+\newcommand{\element}[3]
+    {\ifstrempty{#2}
+      {\left\langle #1 \middle\vert #3 \right\rangle}
+      {\left\langle #1 \middle\vert #2 \middle\vert #3 \right\rangle}}
+
+\lstdefinestyle{codeStyle}{
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  frame=single,
+  xleftmargin=\parindent,
+  showstringspaces=false,
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\bfseries\color{OliveGreen},
+  commentstyle=\itshape\color{BrickRed},
+  identifierstyle=\color{Blue},
+  stringstyle=\color{RedViolet},
+} %Use as \lstinputlisting[language=LANGUAGE,style=codeStyle]{FILENAME}
+
+%\allowdisplaybreaks[1] %Lets align split long equation sections across pages.

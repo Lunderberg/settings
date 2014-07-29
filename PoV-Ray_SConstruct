@@ -1,0 +1,38 @@
+# -*- python -*-
+
+import os
+import glob
+
+def build_ini_file(target,source,env):
+    with open(str(target[0]),'w') as f:
+        lines = open(str(source[0])).readlines()
+        if 'ini file' in lines[0]:
+            for line in lines[1:]:
+                if line.startswith('//'):
+                    f.write(line[2:])
+                else:
+                    break
+
+def render(env,source):
+    filename = str(source)
+    if not filename.endswith('.pov'):
+        filename += '.pov'
+    iniFile = env.IniFile(filename)
+    rendFile = env.RenderFile([filename,iniFile])
+    return [iniFile,rendFile]
+
+rendBld = Builder(action = Action('povray -D $SOURCES'),
+                  suffix = '.png',
+                  src_suffix = '.pov')
+
+iniBld = Builder(action = build_ini_file,
+                 suffix = '.ini',
+                 src_suffix = '.pov')
+
+env = Environment(ENV=os.environ)
+env.Append(BUILDERS = {'RenderFile':rendBld,
+                       'IniFile':iniBld})
+env.AddMethod(render,'Render')
+
+for povfile in glob.glob('*.pov'):
+    env.Render(povfile)

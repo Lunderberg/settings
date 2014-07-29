@@ -1,0 +1,31 @@
+targets := $(patsubst %.tex,%.pdf,$(wildcard *.tex))
+outputDir=$(shell cat outputDir)
+
+define PDF_COMMANDS
+pdflatex $<
+pdflatex $<
+while grep '^LaTeX Warning: .* Rerun to get cross-references right.' $(patsubst %.tex,%.log,$<); do pdflatex $<; done
+if [ -n "$(outputDir)" ]; then cp $@ $(outputDir)/$@; fi
+endef
+
+.PHONY: all clean
+.SECONDARY:
+
+all: $(targets)
+
+#The pdf depends on the tex file, the header.inc file if it exists,
+# and anything in its corresponding _inc directory.
+#Also executes any *.py files within the _inc directory prior to compilation.
+# (Useful for generating plots.)
+.SECONDEXPANSION:
+%.pdf: %.tex $(wildcard header.inc) $$(wildcard $$*_inc/*.*)\
+                    $$(addsuffix run,$$(wildcard $$*_inc/*.py))
+	$(PDF_COMMANDS)
+
+%.pyrun: %.py
+	cd $(dir $<); ./$(notdir $<)
+	touch $@
+
+clean:
+	rm -f */*.pyrun *.log *.aux *.dvi *.bbl *.blg *.ilg\
+              *.toc *.lof *.lot *.idx *.ind *.out *.ps *.bib $(targets)

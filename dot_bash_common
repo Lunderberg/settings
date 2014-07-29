@@ -1,0 +1,68 @@
+# -*-Sh-*-
+
+export EDITOR='/usr/bin/emacs -nw'
+export PYTHONPATH=$PYTHONPATH:~/pylib
+DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
+export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
+export TERM=xterm-256color
+
+export HISTFILESIZE=10000
+#export PROMPT_COMMAND="history 1 | record_command.py -p"
+
+# #Make handling the DISPLAY variable a bit easier with screen.
+# if ps -ocommand= -p $PPID | grep --quiet SCREEN; then
+#     source ~/.DISPLAY.sh
+# else
+#     alias screen="echo 'export DISPLAY=$DISPLAY' > ~/.DISPLAY.sh; screen"
+# fi
+# alias dis='source ~/.DISPLAY.sh'
+
+#Same thing, but for tmux.  Much more pleasant to work with.
+alias dis='export $(tmux showenv | grep DISPLAY)'
+
+eval $(dircolors ~/.dir_colors)
+
+alias emacs="emacs -nw"
+alias es="emacs --daemon"
+alias ec="emacsclient -a '' -c"
+alias en="emacsclient -a '' -n"
+
+alias rm='rm -i'
+alias cp='cp -i'
+alias mv='mv -i'
+alias ls='ls --color=auto'
+alias ll='ls -lh'
+alias lll='ll -a'
+alias duh='du -d 1 -h'
+
+export LESS="--no-init --quit-if-one-screen --raw-control-chars"
+alias more="less"
+
+alias root='root -l'
+alias grep='grep --color=auto'
+alias py='ipython'
+alias py3='ipython3'
+alias vnc='x11vnc -usepw -display :0 --forever'
+alias lynx='lynx --accept-all-cookies'
+alias ssh='ssh -Y'
+alias scons='scons -u'
+alias hamres='hamachi logoff; sleep 5; hamachi logon'
+alias psgrep='ps aux | grep'
+
+alias addpath='export PATH=$PATH:`pwd`'
+
+#Stop ^S from freezing the screen until ^Q is given.
+stty -ixon 2> /dev/null
+
+function show(){
+    string=$(eval echo \$$1)
+    old=$IFS
+    IFS=:
+    printf "%s\n" $string
+    IFS=$old
+}
+
+#Things not in the github repo
+if [ -f ~/.bash_private ]; then
+    source ~/.bash_private
+fi

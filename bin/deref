@@ -1,0 +1,9 @@
+#!/bin/bash
+
+for var in "$@"; do
+    if [ -h "$var" ] ; then
+	target=`readlink "$var"`
+	rm -f "$var"
+	cp "$target" "$var"
+    fi
+done

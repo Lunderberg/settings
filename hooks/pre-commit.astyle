@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+
+import sys
+import subprocess
+from distutils.version import LooseVersion
+import shlex
+
+REQUIRED_ASTYLE_VERSION = 'Artistic Style Version 2.04'
+ASTYLE_OPTIONS = '-A2 -tc -j -J -z2 -H -U'
+C_SUFFIXES = ['.cc','.c','.cpp','.hh','.h','.hpp']
+
+astyle = subprocess.check_output(['which','astyle']).decode('utf-8').strip()
+if not astyle:
+    print("astyle not found, no formatting applied")
+    sys.exit(1)
+
+astyle_version = subprocess.check_output([astyle,'--version'],stderr=subprocess.STDOUT)
+astyle_version = astyle_version.decode('utf-8').strip()
+if LooseVersion(astyle_version) < LooseVersion(REQUIRED_ASTYLE_VERSION):
+    print("Installed: {}\nRequired: {}\nNo formatting applied".format(astyle_version,REQUIRED_ASTYLE_VERSION))
+    sys.exit(2)
+
+updated_files = subprocess.check_output(['git','diff','--cached','--name-only','--diff-filter=ACMR'])
+updated_files = updated_files.decode('utf-8')
+updated_files = [name for name in updated_files.split('\n')
+                 if any(name.lower().endswith(suffix) for suffix in C_SUFFIXES)]
+
+args = [astyle]+shlex.split(ASTYLE_OPTIONS)+updated_files
+status = subprocess.check_call(args)
+if status:
+    print('astyle failed, exiting')
+    sys.exit(status)
+
+subprocess.call(['git','add']+updated_files)
+

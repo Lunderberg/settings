@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+import github3
+import subprocess
+import os
+import sys
+import re
+
+def expand(*args):
+    return os.path.expanduser(os.path.expandvars(os.path.join(*args)))
+
+def access_token():
+    return open(expand('~/.github_auth')).read().strip()
+
+def whoami():
+    #Find the name of the github repo and the owner
+    remotes = subprocess.check_output(['git','remote','-v']).split('\n')
+    for r in remotes:
+        if 'github.com' in r and 'push' in r:
+            remote = r.split()[1]
+            break
+    else:
+        raise Exception('Not connected to github')
+    _,_,_,owner,repo = remote.split('/')
+    if repo.endswith('.git'):
+        repo = repo[:-4]
+
+    #Find the name of the current branch.
+    branches = subprocess.check_output(['git','branch']).split('\n')
+    for b in branches:
+        if '*' in b:
+            branch = b.split()[1]
+            break
+    else:
+        raise Exception("Couldn't find current branch")
+    return owner,repo,branch
+
+def delete_release_tag(repo,tag_name):
+    for rel in repo.iter_releases():
+        if rel.name==tag_name:
+            rel.delete()
+    if any(tag.name==tag_name for tag in repo.iter_tags()):
+        proc = subprocess.Popen(['git','push','--delete','origin',tag_name,
+                                 '-i',expand('~/.ssh/id_dsa.pub')],
+                                stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        proc.communicate(access_token()+'\n\n')
+
+def release(binaries=None):
+    if binaries is None:
+        binaries = []
+
+    owner,repo_name,branch = whoami()
+    release_name = 'dev_'+branch
+
+    gh = github3.login(token=access_token())
+    repo = gh.repository(owner=owner,repository=repo_name)
+    delete_release_tag(repo,release_name)
+
+    rel = repo.create_release(tag_name=release_name,name=release_name,
+                              prerelease=True,target_commitish=branch)
+    for binary in binaries:
+        rel.upload_asset('application/octet-stream',os.path.basename(binary),open(binary,'rb'))
+
+if __name__=='__main__':
+    release(sys.argv[1:])

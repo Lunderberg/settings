@@ -1,0 +1,57 @@
+#-*- python -*-
+
+import os
+import os.path
+
+#Where are the libraries found.
+env = Environment(ENV=os.environ)
+env['ENV']['TEXMFHOME'] = os.path.join(os.environ['HOME'],'.texmf')
+env.Append(PDFLATEXFLAGS='--shell-escape')
+
+#Because expansions are nice to have.
+def expand(path):
+    return os.path.expanduser(os.path.expandvars(path))
+
+def singlefile(env,path,filename):
+    fullname = os.path.join(path,filename)
+    incpath = os.path.join(path,filename.replace('.tex','_inc'))
+    pdf = env.PDF(fullname)
+    #Things in the dependency folder are dependencies.
+    #If they are .py files, then they are to be run.
+    if os.path.isdir(incpath):
+        for include in os.listdir(incpath):
+            if include[0]=='.':
+                continue
+            fullinclude = os.path.join(incpath,include)
+            _, ext = os.path.splitext(include)
+            if ext=='.py':
+                env.Depends(pdf,
+                            env.Command(fullinclude+'run',fullinclude,
+                                        'cd {0}; python {1} && date > {1}run'.format(incpath,include)))
+            elif ext=='.pyrun':
+                pass
+            else:
+                env.Depends(pdf,fullinclude)
+    #Find the output directory.
+    first_line = open(fullname).readline().strip()
+    if first_line.startswith('% outputDir:'):
+        outputDir = expand(first_line[12:].strip())
+    else:
+        try:
+            outputDir = expand(open(os.path.join(path,'outputDir')).read().strip())
+        except IOError:
+            outputDir = None
+    #Install to the output directory.
+    #Also, make a few dummy targets so that scons will install it,
+    # since the installation is into a different directory.
+    if outputDir:
+        inst = env.Install(outputDir,pdf)
+        env.Command(os.path.join(path,'.'+filename+'made'),inst,'touch $TARGET')
+        if os.path.isdir(incpath):
+            env.Command(os.path.join(incpath,'.'+filename+'made'),inst,'touch $TARGET')
+
+#Find each .tex file and make it.
+for path,directory,files in os.walk(os.curdir):
+    for f in files:
+        if f.endswith('.tex') and not f.startswith('.') and '_inc' not in path:
+            singlefile(env,path,f)
