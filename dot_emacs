@@ -4,11 +4,12 @@
 (add-to-list 'load-path "~/.emacs.d")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   Return to defaults          ;;;
+;;;         File formats          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Because sometimes the site-start.el is useful, and other times, downright annoying.
 
+;Because sometimes the site-start.el is useful, and other times, downright annoying.
 (setq magic-mode-alist nil)
+(add-to-list 'magic-mode-alist '("#!/usr/bin/env python" . python-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Windows settings           ;;;
@@ -24,11 +25,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Font size 10 on my laptop, 12 everywhere else.
-(set-face-attribute 'default nil :height
-		    (if (and (display-graphic-p)
-			     (or (= (x-display-pixel-height) 800)
-				 (= (x-display-pixel-height) 1080)))
-			100 120))
+(defun adjust-font-size ()
+	(interactive)
+	(if (display-graphic-p)
+			(set-face-attribute 'default nil :height
+				  (cond ((= (x-display-pixel-height) 1050) 120)
+								((= (x-display-pixel-height) 1080) 120)
+								((= (x-display-pixel-height) 768) 100)))))
+(global-set-key (kbd "C-x g") 'adjust-font-size)
+(adjust-font-size)
 
 (setq rst-level-face-base-light 30) ;RST section header is abysmal otherwise
 
@@ -59,7 +64,6 @@
 (setq inhibit-startup-message t) ;It's annoying.
 (setq column-number-mode t) ;Show the column number, not just the line number
 (put 'narrow-to-region 'disabled nil) ;Enable the C-n-n shortcut
-(global-set-key "\C-x\C-b" 'ibuffer) ;Open a menu with C-x C-b
 (menu-bar-mode -1) ;Hide the menu bar (Can use with F10)
 (tool-bar-mode -1) ;Hide the menu bar (Can use with F10)
 (scroll-bar-mode -1) ;Hide the scroll bar
@@ -67,6 +71,7 @@
 (global-set-key (kbd "M-;") 'comment-or-uncomment-region) ;Preferred over comment-dwim
 (add-hook 'before-save-hook 'delete-trailing-whitespace) ;I hate trailing whitespace
 (setq-default tab-width 2)
+(setq initial-major-mode 'lisp-mode)
 
 ;M-<up> and M-<down> to scroll up/down by one line.
 (global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-down 1)))
@@ -196,6 +201,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (require 'ibuffer)
+(global-set-key "\C-x\C-b" 'ibuffer) ;Open a menu with C-x C-b
 (setq ibuffer-show-empty-filter-groups nil)
 (setq ibuffer-expert t) ;Don't query before deleting unmodified buffers
 (setq ibuffer-saved-filter-groups
