@@ -56,7 +56,10 @@ class LevelScheme(object):
         self.curr_levels = []
         self.curr_gammas = []
         self.defaults = {}
+        self.input = []
+        self.yscale = 2
     def ProcessLine(self,line):
+        self.input.append(line)
         command = line.split()
         if not command:
             return
@@ -73,7 +76,11 @@ class LevelScheme(object):
             self.curr_gammas = []
         elif command[0]=='opt':
             self.defaults.update(options(command[1:]))
+        elif command[0]=='yscale':
+            self.yscale = float(command[1])
     def DrawGammaSet(self,levels,gammas,xstart):
+        output = []
+
         #Draw each gamma
         counter = poscounter(xstart)
         for initial,final,opt in gammas:
@@ -84,14 +91,16 @@ class LevelScheme(object):
                 stropt.append(opt['opt'])
             stropt = ',' + ','.join(stropt) if stropt else ''
             xpos = counter.next_pos(initial,final)
-            print r"\draw[line width=2,-> {opt}] ({x},{ini}) -- coordinate (mid) ({x},{fin});".format(
-                ini=initial,fin=final,opt=stropt,x=xpos)
+            output.append(r"\draw[line width=2,-> {opt}] ({x},{ini}) -- coordinate (mid) ({x},{fin});".format(
+                    ini=initial,fin=final,opt=stropt,x=xpos))
             if 'label' in opt:
-                print r'\node[rotate=90,above] at (mid) {{{label}}};'.format(label=opt['label'])
+                output.append(r'\node[rotate=90,right={offset}cm,above] at (mid) {{{label}}};'.format(
+                        label=opt['label'],
+                        offset=float(opt['offset'])/1000.0 if 'offset' in opt else 0.0))
 
         #Draw each level
         xfinal = max(xstart+3,counter.x)
-        ydiff = 0.3
+        ydiff = 0.6/self.yscale
         ylabel = -ydiff
         for energy,opt in sorted(levels):
             stropt = []
@@ -105,31 +114,62 @@ class LevelScheme(object):
                 ylabel = max(energy,ylabel+ydiff)
                 label = '-- ({xf}+0.5,{ylabel}) -- ({xf}+1.0,{ylabel}) node[right] {{{label}}}'.format(
                     xf=xfinal,ylabel=ylabel,label=opt['label'])
-            print r"\draw[{opt}] ({xi},{en}) -- ({xf},{en}) {label};".format(
-                en=energy,opt=stropt,xi=xstart,xf=xfinal,label=label)
+            output.append(r"\draw[{opt}] ({xi},{en}) -- ({xf},{en}) {label};".format(
+                    en=energy,opt=stropt,xi=xstart,xf=xfinal,label=label))
 
-        return xfinal + 3.0
+        return xfinal + 3.0, '\n'.join(output)
 
-    def Print(self):
+    def MaxLevel(self):
+        if self.curr_levels:
+            max_current = max(level[0] for level in self.curr_levels)
+        else:
+            max_current = -1e10
+        if self.schemes:
+            max_prev = max(level[0] for levels,gammas in self.schemes for level in levels)
+        else:
+            max_prev = -1e10
+        return max(max_current,max_prev)
+
+    def OutputString(self):
+        output = []
         #Environment begin
-        print r"\begin{tikzpicture}[yscale=2]"
+        output.append(r"\begin{{tikzpicture}}[yscale={yscale}]".format(yscale=self.yscale))
 
         #y-axis
-        print r"""\draw (0,0) -- coordinate (y-axis-mid) (0,4.0);
-                   \foreach \y in {0,0.5,...,4.0}
-                       \draw (1pt,\y) -- (-3pt,\y) node[anchor=east] {\y};
-                  \node[rotate=90,above=0.8cm] at (y-axis-mid) {Energy (MeV)};"""
+        ymax = self.MaxLevel()
+        ymax = 0.5 * (int(ymax/0.5)+1)
+        output.append(r"""\draw (0,0) -- coordinate (y-axis-mid) (0,{ymax});
+                            \foreach \y in {{0,0.5,...,{ymax}}}
+                            \draw (1pt,\y) -- (-3pt,\y) node[anchor=east] {{\y}};
+                         \node[rotate=90,above=0.8cm] at (y-axis-mid) {{Energy (MeV)}};""".format(
+                ymax=ymax))
 
         #All the gammas
         xval = 1.0
         for levels,gammas in self.schemes:
-            xval = self.DrawGammaSet(levels,gammas,xval)
-        xval = self.DrawGammaSet(self.curr_levels,self.curr_gammas,xval)
-
-
+            xval,new_lines = self.DrawGammaSet(levels,gammas,xval)
+            output.append(new_lines)
+        xval,new_lines = self.DrawGammaSet(self.curr_levels,self.curr_gammas,xval)
+        output.append(new_lines)
 
         #Environment end
-        print r"\end{tikzpicture}"
+        output.append(r"\end{tikzpicture}")
+
+        return '\n'.join(output)
+
+    def Print(self):
+        sys.stderr.write('-----------------------------------\n')
+        sys.stderr.write('----------------Input--------------\n')
+        sys.stderr.write(''.join(self.input))
+        sys.stderr.write('-----------------------------------\n')
+        output = self.OutputString()
+        sys.stderr.write('----------------Output--------------\n')
+        sys.stderr.write(output + '\n')
+        sys.stderr.write('-----------------------------------\n')
+
+        print output
+
+
 
 
 if __name__=='__main__':
