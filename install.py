@@ -78,6 +78,7 @@ if system=='Linux':
     link('dot_dir_colors','~/.dir_colors')
     link('dot_tmux.conf','~/.tmux.conf')
     link('dot_gitconfig','~/.gitconfig')
+    link('dot_Xdefaults','~/.Xdefaults')
 
 link('pylib','~/pylib')
 link('dot_emacs',dot_emacs)
