@@ -5,6 +5,7 @@ export PYTHONPATH=$PYTHONPATH:~/pylib
 DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
 export TERM=xterm-256color
+export PS1="\[\033[01;32m\]\u@\h\[\033[01;34m\] \w \$\[\033[00m\] "
 
 export HISTFILESIZE=10000
 #export PROMPT_COMMAND="history 1 | record_command.py -p"
@@ -66,3 +67,12 @@ function show(){
 if [ -f ~/.bash_private ]; then
     source ~/.bash_private
 fi
+
+command_not_found_handle() {
+		if [ -x /usr/lib/command-not-found ]; then
+				/usr/lib/command-not-found -- "$1"
+				return $?
+		else
+				return 127
+		fi
+}
