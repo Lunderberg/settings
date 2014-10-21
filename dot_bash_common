@@ -49,6 +49,8 @@ alias scons='scons -u'
 alias hamres='hamachi logoff; sleep 5; hamachi logon'
 alias psgrep='ps aux | grep'
 
+alias cd..="cd .."
+
 alias addpath='export PATH=$PATH:`pwd`'
 
 #Stop ^S from freezing the screen until ^Q is given.
