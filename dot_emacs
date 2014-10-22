@@ -214,6 +214,9 @@
 (setq ibuffer-saved-filter-groups
       (quote (("default"
 	       ("org" (mode . org-mode))
+	       ("hermes" (filename . "hermes"))
+	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
+	       ("omnicolor-images" (filename . "omnicolor-images"))
 	       ("sega_spectcl" (filename . "spectcl"))
 	       ("offline_root" (filename . "offline_root"))
 	       ("GrROOT" (filename . "GrROOT"))

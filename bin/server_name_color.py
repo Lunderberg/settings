@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 import random
-import os
-import sys
+import socket
 
 # Colors that are bright enough to read on a black background
 valid_colors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20,
@@ -25,7 +24,6 @@ valid_colors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20,
                 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222,
                 223, 224, 225, 226, 227, 228, 229, 230, 231, 255]
 
-random.seed(os.environ['HOST'])
+random.seed(socket.gethostname())
 color = random.choice(valid_colors)
-#sys.stderr.write('{}\t{}\n'.format(color,valid_colors.index(color)))
 print '38;5;{}'.format(color)
