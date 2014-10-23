@@ -1,3 +1,4 @@
 xterm*metaSendsEscape: true
 xterm*background: black
 xterm*foreground: white
+xterm*fullscreen: never
