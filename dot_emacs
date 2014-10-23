@@ -1,4 +1,4 @@
-; -*-Lisp-*-
+;; -*-Lisp-*-
 
 (require 'cl)
 (add-to-list 'load-path "~/.emacs.d")
@@ -7,7 +7,7 @@
 ;;;         File formats          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Because sometimes the site-start.el is useful, and other times, downright annoying.
+;;Because sometimes the site-start.el is useful, and other times, downright annoying.
 (setq magic-mode-alist nil)
 (add-to-list 'magic-mode-alist '("#!/usr/bin/env python" . python-mode))
 
@@ -24,14 +24,14 @@
 ;;; Display, coloring, fontsize   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Font size 10 on my laptop, 12 everywhere else.
+;;Font size 10 on my laptop, 12 everywhere else.
 (defun adjust-font-size ()
-	(interactive)
-	(if (display-graphic-p)
-			(set-face-attribute 'default nil :height
-				  (cond ((= (x-display-pixel-height) 1050) 120)
-								((= (x-display-pixel-height) 1080) 120)
-								((= (x-display-pixel-height) 768) 100)))))
+  (interactive)
+  (if (display-graphic-p)
+      (set-face-attribute 'default nil :height
+			  (cond ((= (x-display-pixel-height) 1050) 120)
+				((= (x-display-pixel-height) 1080) 120)
+				((= (x-display-pixel-height) 768) 100)))))
 (global-set-key (kbd "C-x g") 'adjust-font-size)
 (adjust-font-size)
 
@@ -39,7 +39,7 @@
 
 (if (or (string= (getenv "TERM") "xterm-256color")
 	(string= system-type "windows-nt"))
-    ;Coloring things assuming that I have 256 colors.
+    ;;Coloring things assuming that I have 256 colors.
     (progn
       (add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
       (require 'color-theme)
@@ -50,7 +50,7 @@
       (require 'hl-line)
       (global-hl-line-mode t)
       (set-face-background hl-line-face "gray10"))
-  ;Color options if I only have 8 colors.
+  ;;Color options if I only have 8 colors.
   (progn
     (set-face-foreground 'font-lock-comment-face "red")))
 
@@ -70,16 +70,19 @@
 (global-set-key (kbd "<Scroll_Lock>") 'ignore) ;Otherwise, emacs dings whenever I alt-tab in.
 (global-set-key (kbd "M-;") 'comment-or-uncomment-region) ;Preferred over comment-dwim
 (add-hook 'before-save-hook 'delete-trailing-whitespace) ;I hate trailing whitespace
-(setq-default tab-width 2)
+(setq-default tab-width 8)
+(setq-default indent-tabs-mode nil)
 (setq initial-major-mode 'lisp-mode)
 
-;M-<up> and M-<down> to scroll up/down by one line.
+(require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
+
+;;M-<up> and M-<down> to scroll up/down by one line.
 (global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-down 1)))
 (global-set-key (kbd "<M-down>") (lambda () (interactive) (scroll-up 1)))
 (global-set-key (kbd "ESC <up>") (lambda () (interactive) (scroll-down 1))) ;Repeating for emacs in terminal
 (global-set-key (kbd "ESC <down>") (lambda () (interactive) (scroll-up 1)))
 
-;Automatically make script files be executable
+;;Automatically make script files be executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (defun save-in-other-file (new-filename)
@@ -87,18 +90,22 @@
   (write-region (point-min) (point-max) new-filename))
 (global-set-key (kbd "C-x C-a") 'save-in-other-file)
 
+;;Change the DISPLAY variable.
+(defun correct-display-variable ()
+  (interactive)
+  (let ((new-display (shell-command-to-string "tmux showenv | grep DISPLAY | cut -d = -f 2")))
+    (setenv "DISPLAY" new-display)))
 
-
-;Have a . before the backup name to hide it.
+;;Have a . before the backup name to hide it.
 (defun make-backup-file-name (filename)
-    (expand-file-name
-        (concat "." (file-name-nondirectory filename) "~")
-           (file-name-directory filename)))
+  (expand-file-name
+   (concat "." (file-name-nondirectory filename) "~")
+   (file-name-directory filename)))
 
-;Make the directory if it doesn't exist.
+;;Make the directory if it doesn't exist.
 (add-hook 'before-save-hook (lambda ()
-     (if (not (file-exists-p default-directory))
-	 (make-directory default-directory t))))
+			      (if (not (file-exists-p default-directory))
+				  (make-directory default-directory t))))
 
 ;; Helper for compilation. Close the compilation window if there was no error at all.
 (defun compilation-exit-autoclose (status code msg)
@@ -109,7 +116,7 @@
 (setq compilation-exit-message-function 'compilation-exit-autoclose)
 (global-set-key "\C-\M-C" 'compile)
 
-;C-a goes to start of text, then to start of line
+;;C-a goes to start of text, then to start of line
 (defun smarter-move-beginning-of-line (arg)
   (interactive "^p")
   (setq arg (or arg 1))
@@ -123,7 +130,7 @@
 (global-set-key [remap move-beginning-of-line]
                 'smarter-move-beginning-of-line)
 
-;Allows for calculations within emacs.
+;;Allows for calculations within emacs.
 (defun replace-last-sexp ()
   (interactive)
   (let ((value (eval (preceding-sexp))))
@@ -131,7 +138,7 @@
     (insert (format "%s" value))))
 (global-set-key "\M-E" 'replace-last-sexp)
 
-;Insert and go to a line before the current line.
+;;Insert and go to a line before the current line.
 (defun line-before ()
   (interactive)
   (previous-line)
@@ -139,7 +146,7 @@
   (newline-and-indent))
 (global-set-key (kbd "<M-RET>") 'line-before)
 
-;Delete both the current buffer, and the file it visits.
+;;Delete both the current buffer, and the file it visits.
 (defun kill-buffer-and-file ()
   (interactive)
   (let ((filename (buffer-file-name))
@@ -153,7 +160,7 @@
 	(message "File '%s' deleted." filename)))))
 (global-set-key (kbd "C-x n k") 'kill-buffer-and-file)
 
-;Ask before exiting a long-lived session
+;;Ask before exiting a long-lived session
 (defun live-time ()
   (let* ((time (assoc 'etime (process-attributes (emacs-pid))))
 	 (high (cadr time))
@@ -174,7 +181,7 @@
 ;;;    rudel customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Load rudel, a collaborative editing plugin
+;;Load rudel, a collaborative editing plugin
 (add-to-list 'load-path "~/.emacs.d/rudel")
 (load-file "~/.emacs.d/rudel/rudel-loaddefs.el")
 (defun rudel-better-join (user color)
@@ -191,9 +198,9 @@
 			    )))
 (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
 (eval-after-load 'rudel '(lambda ()
-   (set-face-attribute 'rudel-author-overlay-face nil
-		       :background nil
-		       :underline "black")))
+			   (set-face-attribute 'rudel-author-overlay-face nil
+					       :background nil
+					       :underline "black")))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -206,23 +213,26 @@
 (setq ibuffer-expert t) ;Don't query before deleting unmodified buffers
 (setq ibuffer-saved-filter-groups
       (quote (("default"
-							 ("org" (mode . org-mode))
-							 ("sega_spectcl" (filename . "spectcl"))
-							 ("offline_root" (filename . "offline_root"))
-							 ("GrROOT" (filename . "GrROOT"))
-							 ("DDAS" (or
-												(filename . "ddas")
-												(filename . "DDAS")))
-							 ("e12501" (filename . "e12501"))
-							 ("pyCharGen" (filename . "pyCharGen"))
-							 ("FillMaster" (filename . "FillMaster"))
-							 ("Misc. C" (or
-													 (mode . c-mode)
-													 (mode . c++-mode)))
-							 ("Misc. python" (mode . python-mode))
-							 ("emacs" (name . "^\\*.*\\*$"))
-							 ("dired" (mode . dired-mode))
-							 ))))
+	       ("org" (mode . org-mode))
+	       ("hermes" (filename . "hermes"))
+	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
+	       ("omnicolor-images" (filename . "omnicolor-images"))
+	       ("sega_spectcl" (filename . "spectcl"))
+	       ("offline_root" (filename . "offline_root"))
+	       ("GrROOT" (filename . "GrROOT"))
+	       ("DDAS" (or
+			(filename . "ddas")
+			(filename . "DDAS")))
+	       ("e12501" (filename . "e12501"))
+	       ("pyCharGen" (filename . "pyCharGen"))
+	       ("FillMaster" (filename . "FillMaster"))
+	       ("Misc. C" (or
+			   (mode . c-mode)
+			   (mode . c++-mode)))
+	       ("Misc. python" (mode . python-mode))
+	       ("emacs" (name . "^\\*.*\\*$"))
+	       ("dired" (mode . dired-mode))
+	       ))))
 (add-hook 'ibuffer-mode-hook
 	  (lambda () (ibuffer-switch-to-saved-filter-groups "default")))
 
@@ -262,30 +272,34 @@
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Jump to corresponding header files.
+					;Jump to corresponding header files.
 (add-hook 'c-initialization-hook '(lambda ()
-   (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
-	 (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
+				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
+				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
 (setq-default ff-always-in-other-window nil)
 (setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"))
 
-;Use Astyle
+;;Guess the appropriate indentation style buffer-by-buffer.
+(require 'guess-style)
+(add-hook 'c-mode-common-hook 'guess-style-guess-all)
+
+;;Use Astyle
 (autoload 'apply-rcs-patch "~/.emacs.d/rcs-patch.el")
 (defun save-buffer-astyle ()
   (interactive)
-	(save-buffer)
-	(save-window-excursion
-		(shell-command-on-region (point-min) (point-max)
-														 (format "astyle -A2 -tc -j -J -z2 -H -U | diff %s - --rcs" (buffer-file-name))
-														 (get-buffer-create "*Astyle Diff*") nil
-														 (get-buffer-create "*Astyle Errors*") t)
-		(apply-rcs-patch (get-buffer-create "*Astyle Diff*")))
-	(save-buffer))
+  (save-buffer)
+  (save-window-excursion
+    (shell-command-on-region (point-min) (point-max)
+			     (format "astyle -A2 -tc -j -J -z2 -H -U | diff %s - --rcs" (buffer-file-name))
+			     (get-buffer-create "*Astyle Diff*") nil
+			     (get-buffer-create "*Astyle Errors*") t)
+    (apply-rcs-patch (get-buffer-create "*Astyle Diff*")))
+  (save-buffer))
 
 (defun load-save-buffer-astyle ()
-	(interactive)
-	(local-set-key [remap save-buffer] 'save-buffer-astyle)
-	(message "Loaded astyle"))
+  (interactive)
+  (local-set-key [remap save-buffer] 'save-buffer-astyle)
+  (message "Loaded astyle"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   PHP/Web customizations           ;;;
@@ -299,7 +313,7 @@
 ;;;        Subprocesses                ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Fill the buffer in the same way as it would be shown in bash
+;;Fill the buffer in the same way as it would be shown in bash
 (defun shelllike-filter (proc string)
   (let* ((buffer (process-buffer proc))
 	 (window (get-buffer-window buffer)))
@@ -324,7 +338,7 @@
   (let* ((quoted-name (format "*%s*" name))
 	 (sentinel-name (make-symbol (format "%s-automade-sentinel" name))))
     `(progn
-       ;The function to be run
+       ;;The function to be run
        (defun ,name ()
 	 (interactive)
 	 (if (get-buffer ,quoted-name)
@@ -335,8 +349,8 @@
 	   (set-process-sentinel proc ',sentinel-name)
 	   ;; (switch-to-buffer-other-window ,quoted-name)
 	   ;; (other-window -1)
-		 ))
-       ;The sentinel, run after the process completes, changing the status color of the buffer.
+	   ))
+       ;;The sentinel, run after the process completes, changing the status color of the buffer.
        (defun ,sentinel-name (process event)
 	 (let* ((success (string-equal event "finished\n"))
 		(mode-line-color (if success 'mode-line-highlight 'font-lock-warning-face))
@@ -357,19 +371,19 @@
 ;;;       LaTeX customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Filenames ending in .inc are opened as LaTeX files
+;;Filenames ending in .inc are opened as LaTeX files
 (add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
 
-;Why would I want indent-newline-and-indent instead of the standard?
+;;Why would I want indent-newline-and-indent instead of the standard?
 (eval-after-load 'latex
   '(define-key LaTeX-mode-map (kbd "C-j") 'newline-and-indent))
 
-;Automatically compile to pdf whenever saving.
+					;Automatically compile to pdf whenever saving.
 (make-subprocess-command latex-compile "scons -u")
 (add-hook 'LaTeX-mode-hook '(lambda ()
-      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
+			      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
 
-;Don't autocomplete to the intermediate files.
+;;Don't autocomplete to the intermediate files.
 (setq completion-ignored-extensions
       (append completion-ignored-extensions
 	      '(".aux" ".fls" ".out" ".pdf" ".toc")))
@@ -383,7 +397,7 @@
 (autoload 'pov-mode "pov-mode" "PoV-Ray scene file" t)
 (add-to-list 'auto-mode-alist '("\\.pov\\'" . pov-mode))
 
-;Display the image in another window.
+;;Display the image in another window.
 (defun povray-render-sentinel (process event)
   (let* ((success (string-equal event "finished\n"))
 	 (povfile-buffer (get-buffer (format "%s" process)))
@@ -391,15 +405,15 @@
 	 (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
 	 (png-buffer (get-file-buffer png-filename)))
     (if success	(progn
-       (if (display-graphic-p) (progn
-	  (if png-buffer (kill-buffer png-buffer))
-	  (find-file-other-window png-filename)
-	  (other-window -1)))))))
+		  (if (display-graphic-p) (progn
+					    (if png-buffer (kill-buffer png-buffer))
+					    (find-file-other-window png-filename)
+					    (other-window -1)))))))
 
-;Render the current povray file
+;;Render the current povray file
 (make-subprocess-command povray-render
-      (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
-      povray-render-sentinel)
+			 (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
+			 povray-render-sentinel)
 (eval-after-load 'pov-mode
   '(define-key pov-mode-map (kbd "C-c C-r") 'povray-render))
 ;; (add-hook 'pov-mode-hook '(lambda ()

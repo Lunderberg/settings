@@ -5,7 +5,14 @@ export PYTHONPATH=$PYTHONPATH:~/pylib
 DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
 export TERM=xterm-256color
-export PS1="\[\033[01;32m\]\u@\h\[\033[01;34m\] \w \$\[\033[00m\] "
+
+# Select a color for the server, random based on hostname.
+if which server_name_color.py > /dev/null; then
+    SERVER_COLOR=`server_name_color.py`
+else
+    SERVER_COLOR="1;32"
+fi
+export PS1="\[\e[1;32m\]\u@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
 export HISTFILESIZE=10000
 #export PROMPT_COMMAND="history 1 | record_command.py -p"
@@ -49,6 +56,8 @@ alias ssh='ssh -Y'
 alias scons='scons -u'
 alias hamres='hamachi logoff; sleep 5; hamachi logon'
 alias psgrep='ps aux | grep'
+
+alias cd..="cd .."
 
 alias addpath='export PATH=$PATH:`pwd`'
 
