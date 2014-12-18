@@ -10,6 +10,86 @@
 ;;Because sometimes the site-start.el is useful, and other times, downright annoying.
 (setq magic-mode-alist nil)
 (add-to-list 'magic-mode-alist '("#!/usr/bin/env python" . python-mode))
+(add-to-list 'auto-mode-alist '("SConstruct" . python-mode))
+(add-to-list 'auto-mode-alist '("SConscript" . python-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      CEDET          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(load-file "~/.emacs.d/cedet-1.1/common/cedet.el")
+(global-ede-mode 1)
+(semantic-load-enable-code-helpers)
+(global-srecode-minor-mode 1)
+
+(semantic-load-enable-excessive-code-helpers)
+
+(global-ede-mode t)
+;; (ede-cpp-root-project "temp"
+;;                       :name "temp"
+;;                       :file "~/temp/SConstruct"
+;;                       :system-include-path '("/usr/include"
+;;                                              "/usr/include/boost")
+;;                       :include-path '("include")
+;;                       )
+
+(setq ede-locate-setup-options
+      '(ede-locate-locate
+        ede-locate-base))
+
+(define-key senator-mode-map (kbd "C-c C-j") 'semantic-ia-fast-jump)
+(define-key senator-mode-map (kbd "C-c j") 'semantic-analyze-proto-impl-toggle)
+;; TODO: Keyboard shortcut for semantic-analyze-proto-impl-toggle
+;; TODO: Smart-jump, jump to the header unless already at the header, otherwise jump to implementation
+;; TODO: Force analysis of all include and source files in current directory.
+;; TODO: Figure out semanticdb-project-roots
+;; TODO: Keyboard shortcut for semantic-complete-analyze-inline-idle
+;; TODO: Look into semantic-complete-self-insert
+
+(defun delayed-bovinate ()
+  (run-at-time "5 sec" nil
+               '(lambda ()
+                  (let ((current-prefix-arg '(1)))
+                    (call-interactively 'bovinate)))))
+
+;; (add-hook 'c-mode-common-hook 'delayed-bovinate)
+
+(defun semantic-smart-complete ()
+  (interactive)
+  (let ((is-at-start (>= (save-excursion
+                            (back-to-indentation)
+                            (point))
+                         (point))))
+    (if is-at-start
+        (c-indent-line-or-region)
+      (semantic-complete-analyze-inline-idle))))
+
+;; (add-hook 'c-mode-common-hook '(lambda ()
+;;        (local-set-key (kbd "TAB") 'semantic-smart-complete)))
+
+(global-semantic-tag-folding-mode 1)
+
+(defun semantic-tag-folding-toggle ()
+  (interactive)
+  (let* ((tag (car (last (semantic-find-tag-by-overlay))))
+         (is-folded (semantic-tag-folding-get-fold-state tag nil)))
+    (goto-char (semantic-tag-start tag))
+    (semantic-tag-folding-fold-or-show-tags (list tag) (not is-folded))))
+
+(define-key semantic-tag-folding-mode-map (kbd "C-c C-v") 'semantic-tag-folding-toggle)
+(define-key semantic-tag-folding-mode-map (kbd "C-c C-c C-v") 'semantic-tag-folding-fold-all)
+(define-key semantic-tag-folding-mode-map (kbd "C-c C-c C-d") 'semantic-tag-folding-show-all)
+
+;; Get rid of the blue lines above each function.
+(global-semantic-decoration-mode -1)
+
+;; Get rid of the stickyfunc reminder of
+;; If my functions are big enough that I need a reminder of which one I'm in,
+;;   they are too big anyways.
+(global-semantic-stickyfunc-mode -1)
+
+(global-semantic-idle-completions-mode -1)
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Windows settings           ;;;
@@ -84,6 +164,10 @@
 
 ;;Automatically make script files be executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+
+(require 'keyfreq)
+(keyfreq-mode 1)
+(keyfreq-autosave-mode 1)
 
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
@@ -169,9 +253,10 @@
     (+ (* high 65536) low (/ usec 1e6))))
 (defun old-emacs-query-exit ()
   (interactive)
-  (if (or (< (live-time) 86400)
-	  (yes-or-no-p (format "Exit this %d-day-old emacs session? "
-			       (/ (live-time) 86400))))
+  (if (or (frame-parameter nil 'client)
+          (or (< (live-time) 86400)
+              (yes-or-no-p (format "Exit this %d-day-old emacs session? "
+                                   (/ (live-time) 86400)))))
       (save-buffers-kill-terminal)))
 (global-set-key [remap save-buffers-kill-terminal]
 		'old-emacs-query-exit)
@@ -272,7 +357,7 @@
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-					;Jump to corresponding header files.
+;;Jump to corresponding header files.
 (add-hook 'c-initialization-hook '(lambda ()
 				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
 				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
