@@ -301,8 +301,10 @@
       (quote (("default"
 	       ("org" (mode . org-mode))
 	       ("hermes" (filename . "hermes"))
+               ("lua-bindings" (filename . "lua-bindings"))
 	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
 	       ("omnicolor-images" (filename . "omnicolor-images"))
+               ("battle-bots" (filename . "battle-bots"))
 	       ("sega_spectcl" (filename . "spectcl"))
 	       ("offline_root" (filename . "offline_root"))
 	       ("GrROOT" (filename . "GrROOT"))
@@ -363,7 +365,9 @@
 				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
 				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
 (setq-default ff-always-in-other-window nil)
-(setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"))
+(setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"
+                              "./*/include" "../include/*" "../include/*/detail"
+                              "../../../src" "../../src"))
 
 ;;Guess the appropriate indentation style buffer-by-buffer.
 (require 'guess-style)
@@ -527,3 +531,12 @@
 (setq ahk-syntax-directory "~/.emacs.d/ahk-mode/Syntax")
 (add-to-list 'auto-mode-alist '("\\.ahk$" . ahk-mode))
 (autoload 'ahk-mode "ahk-mode")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;        lua customizations           ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-list 'load-path "~/.emacs.d/lua-mode")
+(autoload 'lua-mode "lua-mode" "Lua editing mode." t)
+(add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
+(add-to-list 'interpreter-mode-alist '("lua" . lua-mode))
