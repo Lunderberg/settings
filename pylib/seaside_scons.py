@@ -94,8 +94,7 @@ def spawn( sh, escape, cmd, args, env ):
     command = ' '.join(args)
     asciienv = '\n'.join('export {var}={val}'.format(var=key,val=escape(value))
                          for key,value in env.iteritems()
-                         if key!='module') #don't manually set module, because it misbehaves
-
+                         if key!='module' and '()' not in key) #don't manually set module, because it misbehaves
     #Pick a script directory, then make sure it is valid.
     scriptDir = (os.path.expanduser(os.path.expandvars(os.environ['SEASIDE_SCRIPT_DIR']))
                  if 'SEASIDE_SCRIPT_DIR' in os.environ
@@ -138,9 +137,10 @@ def spawn( sh, escape, cmd, args, env ):
 
     returncode = int(job_info['exit_status'])
 
-    if not keep_script:
+    # Delete intermediate files, unless asked for them, or if the job finished with an error.
+    if not keep_script and not returncode:
         os.remove(script_name)
-    if not keep_stdout:
+    if not keep_stdout and not returncode:
         stdout_filename = job_info['Output_Path']
         stdout_filename = stdout_filename[len(job_info['server'])+1:]
         os.remove(stdout_filename)

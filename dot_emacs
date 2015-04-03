@@ -13,84 +13,6 @@
 (add-to-list 'auto-mode-alist '("SConstruct" . python-mode))
 (add-to-list 'auto-mode-alist '("SConscript" . python-mode))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;      CEDET          ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(load-file "~/.emacs.d/cedet-1.1/common/cedet.el")
-(global-ede-mode 1)
-(semantic-load-enable-code-helpers)
-(global-srecode-minor-mode 1)
-
-(semantic-load-enable-excessive-code-helpers)
-
-(global-ede-mode t)
-;; (ede-cpp-root-project "temp"
-;;                       :name "temp"
-;;                       :file "~/temp/SConstruct"
-;;                       :system-include-path '("/usr/include"
-;;                                              "/usr/include/boost")
-;;                       :include-path '("include")
-;;                       )
-
-(setq ede-locate-setup-options
-      '(ede-locate-locate
-        ede-locate-base))
-
-(define-key senator-mode-map (kbd "C-c C-j") 'semantic-ia-fast-jump)
-(define-key senator-mode-map (kbd "C-c j") 'semantic-analyze-proto-impl-toggle)
-;; TODO: Keyboard shortcut for semantic-analyze-proto-impl-toggle
-;; TODO: Smart-jump, jump to the header unless already at the header, otherwise jump to implementation
-;; TODO: Force analysis of all include and source files in current directory.
-;; TODO: Figure out semanticdb-project-roots
-;; TODO: Keyboard shortcut for semantic-complete-analyze-inline-idle
-;; TODO: Look into semantic-complete-self-insert
-
-(defun delayed-bovinate ()
-  (run-at-time "5 sec" nil
-               '(lambda ()
-                  (let ((current-prefix-arg '(1)))
-                    (call-interactively 'bovinate)))))
-
-;; (add-hook 'c-mode-common-hook 'delayed-bovinate)
-
-(defun semantic-smart-complete ()
-  (interactive)
-  (let ((is-at-start (>= (save-excursion
-                            (back-to-indentation)
-                            (point))
-                         (point))))
-    (if is-at-start
-        (c-indent-line-or-region)
-      (semantic-complete-analyze-inline-idle))))
-
-;; (add-hook 'c-mode-common-hook '(lambda ()
-;;        (local-set-key (kbd "TAB") 'semantic-smart-complete)))
-
-(global-semantic-tag-folding-mode 1)
-
-(defun semantic-tag-folding-toggle ()
-  (interactive)
-  (let* ((tag (car (last (semantic-find-tag-by-overlay))))
-         (is-folded (semantic-tag-folding-get-fold-state tag nil)))
-    (goto-char (semantic-tag-start tag))
-    (semantic-tag-folding-fold-or-show-tags (list tag) (not is-folded))))
-
-(define-key semantic-tag-folding-mode-map (kbd "C-c C-v") 'semantic-tag-folding-toggle)
-(define-key semantic-tag-folding-mode-map (kbd "C-c C-c C-v") 'semantic-tag-folding-fold-all)
-(define-key semantic-tag-folding-mode-map (kbd "C-c C-c C-d") 'semantic-tag-folding-show-all)
-
-;; Get rid of the blue lines above each function.
-(global-semantic-decoration-mode -1)
-
-;; Get rid of the stickyfunc reminder of
-;; If my functions are big enough that I need a reminder of which one I'm in,
-;;   they are too big anyways.
-(global-semantic-stickyfunc-mode -1)
-
-(global-semantic-idle-completions-mode -1)
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Windows settings           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,6 +184,16 @@
 (global-set-key [remap save-buffers-kill-terminal]
 		'old-emacs-query-exit)
 
+;; TODO: If at beginning of line, delete-indentation.
+;;       If at end of line, next-line then delete-indentation.
+;;       Otherwise, just-one-space.
+;; (defun just-one-space-with-newline ()
+;;   (interactive)
+;;   (next-line)
+;;   (delete-indentation))
+;; (global-set-key [remap just-one-space]
+;;                 'just-one-space-with-newline)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    rudel customizations            ;;;
@@ -368,10 +300,6 @@
 (setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"
                               "./*/include" "../include/*" "../include/*/detail"
                               "../../../src" "../../src"))
-
-;;Guess the appropriate indentation style buffer-by-buffer.
-(require 'guess-style)
-(add-hook 'c-mode-common-hook 'guess-style-guess-all)
 
 ;;Use Astyle
 (autoload 'apply-rcs-patch "~/.emacs.d/rcs-patch.el")
