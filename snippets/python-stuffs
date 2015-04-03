@@ -2,3 +2,8 @@
 #Usable LaTeX in the labels of matplotlib graphs
 pylab.rc('text', usetex=True)
 pylab.rc('font', family='serif')
+
+#To open an interpreter while using pyqt4
+QtCore.pyqtRemoveInputHook()
+import IPython; IPython.embed()
+QtCore.pyqtRestoreInputHook()

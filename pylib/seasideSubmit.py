@@ -27,6 +27,7 @@ contents = """
 ### time request (in HH:MM:SS)
 #PBS -l {reqs}
 
+set -o pipefail
 cd ${{PBS_O_WORKDIR}}
 {command}
 """.strip()
@@ -51,7 +52,7 @@ def seasideSubmit(commands,walltime='10:00:00',nodes=1,name=None,email='abe',joi
         os.makedirs(scriptDir)
     elif not os.path.isdir(scriptDir):
         raise EnvironmentError('{0} exists and is not a directory')
-    
+
     #Make each script, then submit them.
     for i,command in enumerate(commands):
         fileName = name + '.' + str(i) + '.sh'
@@ -61,4 +62,4 @@ def seasideSubmit(commands,walltime='10:00:00',nodes=1,name=None,email='abe',joi
             f.write(fileContents)
         command = 'ssh seaside "cd {pwd}; qsub {fileName}" > /dev/null 2> /dev/null'.format(pwd=os.getcwd(),fileName=fileName)
         os.system(command)
-        
+
