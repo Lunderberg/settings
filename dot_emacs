@@ -74,6 +74,7 @@
 (add-hook 'before-save-hook 'delete-trailing-whitespace) ;I hate trailing whitespace
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
+(setq-default c-basic-offset 2)
 (setq initial-major-mode 'lisp-mode)
 
 (require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
