@@ -357,6 +357,7 @@
 
     (c-offsets-alist . ((arglist-close . c-lineup-arglist)
                         (arglist-intro . +)
+                        (arglist-close . 0)
                         (case-label . 0)
                         (statement-case-intro . +)
                         (access-label . -)
