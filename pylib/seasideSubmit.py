@@ -21,7 +21,7 @@ contents = """
 ### name of the job
 #PBS -N {name}
 ### email on _a_bort, _b_egin, _e_nd
-#PBS -m {email}
+{email}
 ### combine stdout/stderr
 #PBS -j {join}
 ### time request (in HH:MM:SS)
@@ -52,6 +52,9 @@ def seasideSubmit(commands,walltime='10:00:00',nodes=1,name=None,email='abe',joi
         os.makedirs(scriptDir)
     elif not os.path.isdir(scriptDir):
         raise EnvironmentError('{0} exists and is not a directory')
+
+    if email:
+        email = '#PBS -m ' + email
 
     #Make each script, then submit them.
     for i,command in enumerate(commands):

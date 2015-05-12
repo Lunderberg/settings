@@ -91,11 +91,6 @@
 (keyfreq-mode 1)
 (keyfreq-autosave-mode 1)
 
-;; Pairs parentheses and braces when made.
-(add-to-list 'load-path "~/.emacs.d/autopair")
-(require 'autopair)
-(autopair-global-mode)
-
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
   (write-region (point-min) (point-max) new-filename))
@@ -140,6 +135,20 @@
       (move-beginning-of-line 1))))
 (global-set-key [remap move-beginning-of-line]
                 'smarter-move-beginning-of-line)
+
+;; ;; Pairs parentheses and braces when made.
+;; (add-to-list 'load-path "~/.emacs.d/autopair")
+;; (require 'autopair)
+;; (autopair-global-mode)
+;; ;; (defun my-autopair-insert-opening (n)
+;; ;;   (interactive "p")
+;; ;;   (if (looking-at "$\|[[:space:]]")
+;; ;;       (autopair-insert-opening)
+;; ;;     (self-insert-command n)))
+;; ;; (global-unset-key [remap autopair-insert-opening]
+;; ;;                 'my-autopair-insert-opening)
+
+
 
 ;;Allows for calculations within emacs.
 (defun replace-last-sexp ()
