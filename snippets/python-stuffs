@@ -1,3 +1,4 @@
+# -*- python -*-
 
 #Usable LaTeX in the labels of matplotlib graphs
 pylab.rc('text', usetex=True)
@@ -7,3 +8,13 @@ pylab.rc('font', family='serif')
 QtCore.pyqtRemoveInputHook()
 import IPython; IPython.embed()
 QtCore.pyqtRestoreInputHook()
+
+#To loop over groups of values
+def grouper(iterable, n):
+    args = [iter(iterable)] * n
+    return zip(*args)
+
+#Fix ROOT TCanvases, which don't redraw when they should
+def fix_tcanvases():
+    for canvas in ROOT.gROOT.GetListOfCanvases():
+        canvas.Update()
