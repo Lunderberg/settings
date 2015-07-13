@@ -1,7 +1,29 @@
 ;; -*-Lisp-*-
 
 (require 'cl)
-(add-to-list 'load-path "~/.emacs.d")
+(add-to-list 'load-path "~/.emacs.d/misc")
+
+(setq electric-indent-mode nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;    Package Management         ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (add-to-list
+   'package-archives
+   '("melpa" . "http://melpa.org/packages/")
+   t)
+  (package-initialize))
+
+(defun can-use (package)
+  (if (fboundp 'package-install)
+    (progn
+      (unless (package-installed-p package)
+        (package-install package))
+      (package-installed-p package))
+    nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;         File formats          ;;;
@@ -9,6 +31,7 @@
 
 ;;Because sometimes the site-start.el is useful, and other times, downright annoying.
 (setq magic-mode-alist nil)
+
 (add-to-list 'magic-mode-alist '("#!/usr/bin/env python" . python-mode))
 (add-to-list 'auto-mode-alist '("SConstruct" . python-mode))
 (add-to-list 'auto-mode-alist '("SConscript" . python-mode))
@@ -43,15 +66,15 @@
 	(string= system-type "windows-nt"))
     ;;Coloring things assuming that I have 256 colors.
     (progn
-      (add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
-      (require 'color-theme)
-      (color-theme-initialize)
-      (color-theme-euphoria)
-      (set-face-foreground 'font-lock-preprocessor-face "light sea green")
-      (set-face-foreground 'font-lock-constant-face "light sea green")
-      (require 'hl-line)
-      (global-hl-line-mode t)
-      (set-face-background hl-line-face "gray10"))
+      (when (can-use 'color-theme)
+        (require 'color-theme)
+        (color-theme-initialize)
+        (color-theme-euphoria)
+        (set-face-foreground 'font-lock-preprocessor-face "light sea green")
+        (set-face-foreground 'font-lock-constant-face "light sea green")
+        (require 'hl-line)
+        (global-hl-line-mode t)
+        (set-face-background hl-line-face "gray10")))
   ;;Color options if I only have 8 colors.
   (progn
     (set-face-foreground 'font-lock-comment-face "red")))
@@ -87,9 +110,10 @@
 ;;Automatically make script files be executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
-(require 'keyfreq)
-(keyfreq-mode 1)
-(keyfreq-autosave-mode 1)
+(when (can-use 'keyfreq)
+  (require 'keyfreq)
+  (keyfreq-mode 1)
+  (keyfreq-autosave-mode 1))
 
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
@@ -135,20 +159,6 @@
       (move-beginning-of-line 1))))
 (global-set-key [remap move-beginning-of-line]
                 'smarter-move-beginning-of-line)
-
-;; ;; Pairs parentheses and braces when made.
-;; (add-to-list 'load-path "~/.emacs.d/autopair")
-;; (require 'autopair)
-;; (autopair-global-mode)
-;; ;; (defun my-autopair-insert-opening (n)
-;; ;;   (interactive "p")
-;; ;;   (if (looking-at "$\|[[:space:]]")
-;; ;;       (autopair-insert-opening)
-;; ;;     (self-insert-command n)))
-;; ;; (global-unset-key [remap autopair-insert-opening]
-;; ;;                 'my-autopair-insert-opening)
-
-
 
 ;;Allows for calculations within emacs.
 (defun replace-last-sexp ()
@@ -212,26 +222,25 @@
 ;;;    rudel customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Load rudel, a collaborative editing plugin
-(add-to-list 'load-path "~/.emacs.d/rudel")
-(load-file "~/.emacs.d/rudel/rudel-loaddefs.el")
-(defun rudel-better-join (user color)
-  (interactive "sUsername: \nsColor: ")
-  (rudel-join-session (list :encryption nil
-			    :username user
-			    :color color
-			    :global-password nil
-			    :user-password nil
-			    :host "bluegill"
-			    :port 6522
-			    :protocol-backend (rudel-backend-get 'protocol 'obby)
-			    :transport-backend (rudel-backend-get 'transport 'tcp)
-			    )))
-(global-set-key (kbd "C-c C-c j") 'rudel-better-join)
-(eval-after-load 'rudel '(lambda ()
-			   (set-face-attribute 'rudel-author-overlay-face nil
-					       :background nil
-					       :underline "black")))
+(when (can-use 'rudel)
+  (autoload 'rudel-join-session "rudel-loaddefs" "Rudel" t)
+  (defun rudel-better-join (user color)
+    (interactive "sUsername: \nsColor: ")
+    (rudel-join-session (list :encryption nil
+                              :username user
+                              :color color
+                              :global-password nil
+                              :user-password nil
+                              :host "bluegill"
+                              :port 6522
+                              :protocol-backend (rudel-backend-get 'protocol 'obby)
+                              :transport-backend (rudel-backend-get 'transport 'tcp)
+                              )))
+  (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
+  (eval-after-load 'rudel '(lambda ()
+                             (set-face-attribute 'rudel-author-overlay-face nil
+                                                 :background nil
+                                                 :underline "black"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -294,12 +303,13 @@
 ;;;     yasnippet customizations    ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d/yasnippet")
-(require 'yasnippet)
-(define-key yas-minor-mode-map (kbd "<tab>") nil)
-(define-key yas-minor-mode-map (kbd "TAB") nil)
-(define-key yas-minor-mode-map (kbd "C-c TAB") 'yas-expand)
-(yas-global-mode 1)
+(when (can-use 'yasnippet)
+  (require 'yasnippet)
+  (define-key yas-minor-mode-map (kbd "<tab>") nil)
+  (define-key yas-minor-mode-map (kbd "TAB") nil)
+  (define-key yas-minor-mode-map (kbd "C-c TAB") 'yas-expand)
+  (yas-global-mode 1)
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        C++ customizations          ;;;
@@ -310,9 +320,38 @@
 				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
 				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
 (setq-default ff-always-in-other-window nil)
+(setq cc-other-file-alist '(("\\.cc\\'"
+                             (".hh" ".h"))
+                            ("\\.hh\\'"
+                             (".cc" ".C" ".cxx"))
+                            ("\\.c\\'"
+                             (".h"))
+                            ("\\.h\\'"
+                             (".c" ".cc" ".C" ".CC" ".cxx" ".cpp"))
+                            ("\\.C\\'"
+                             (".H" ".hh" ".h"))
+                            ("\\.H\\'"
+                             (".C" ".CC"))
+                            ("\\.CC\\'"
+                             (".HH" ".H" ".hh" ".h"))
+                            ("\\.HH\\'"
+                             (".CC"))
+                            ("\\.c\\+\\+\\'"
+                             (".h++" ".hh" ".h"))
+                            ("\\.h\\+\\+\\'"
+                             (".c++"))
+                            ("\\.cpp\\'"
+                             (".hpp" ".hh" ".h"))
+                            ("\\.hpp\\'"
+                             (".cpp"))
+                            ("\\.cxx\\'"
+                             (".hxx" ".hh" ".h"))
+                            ("\\.hxx\\'"
+                             (".cxx"))))
 (setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"
                               "./*/include" "../include/*" "../include/*/detail"
-                              "../../../src" "../../src"))
+                               "../../src" "../../include"
+                               "../../../src" "../libraries/*"))
 
 ;;Use Astyle
 (autoload 'apply-rcs-patch "~/.emacs.d/rcs-patch.el")
@@ -380,7 +419,7 @@
 (defun my-c-mode-common-hook ()
   (c-add-style "My" my-c-style 'set-this-style)
   (c-toggle-auto-newline -1)
-  (c-toggle-hungry-state 1))
+  (c-toggle-hungry-state -1))
 
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
@@ -388,7 +427,6 @@
 ;;;   PHP/Web customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d")
 (autoload 'web-mode "web-mode" "Web Mode" t)
 (add-to-list 'auto-mode-alist '("\\.php$" . web-mode))
 
@@ -476,31 +514,29 @@
 ;;;      PoV-Ray customizations      ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d/pov-mode-pov-mode")
-(autoload 'pov-mode "pov-mode" "PoV-Ray scene file" t)
-(add-to-list 'auto-mode-alist '("\\.pov\\'" . pov-mode))
+(when (can-use 'pov-mode)
+  (autoload 'pov-mode "pov-mode" "PoV-Ray scene file" t)
+  (add-to-list 'auto-mode-alist '("\\.pov\\'" . pov-mode))
 
-;;Display the image in another window.
-(defun povray-render-sentinel (process event)
-  (let* ((success (string-equal event "finished\n"))
-	 (povfile-buffer (get-buffer (format "%s" process)))
-	 (povfile-window (get-buffer-window povfile-buffer))
-	 (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
-	 (png-buffer (get-file-buffer png-filename)))
-    (if success	(progn
-		  (if (display-graphic-p) (progn
-					    (if png-buffer (kill-buffer png-buffer))
-					    (find-file-other-window png-filename)
-					    (other-window -1)))))))
+  ;;Display the image in another window.
+  (defun povray-render-sentinel (process event)
+    (let* ((success (string-equal event "finished\n"))
+           (povfile-buffer (get-buffer (format "%s" process)))
+           (povfile-window (get-buffer-window povfile-buffer))
+           (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
+           (png-buffer (get-file-buffer png-filename)))
+      (if success	(progn
+                          (if (display-graphic-p) (progn
+                                                    (if png-buffer (kill-buffer png-buffer))
+                                                    (find-file-other-window png-filename)
+                                                    (other-window -1)))))))
 
-;;Render the current povray file
-(make-subprocess-command povray-render
-			 (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
-			 povray-render-sentinel)
-(eval-after-load 'pov-mode
-  '(define-key pov-mode-map (kbd "C-c C-r") 'povray-render))
-;; (add-hook 'pov-mode-hook '(lambda ()
-;;       (add-hook 'after-save-hook 'povray-render nil 'make-it-local)))
+  ;;Render the current povray file
+  (make-subprocess-command povray-render
+                           (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
+                           povray-render-sentinel)
+  (eval-after-load 'pov-mode
+    '(define-key pov-mode-map (kbd "C-c C-r") 'povray-render)))
 
 
 
@@ -508,28 +544,20 @@
 ;; ;;;      golang  customizations      ;;;
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (add-to-list 'load-path "~/.emacs.d/go-mode.el")
-;; (require 'go-mode)
-;; (add-hook 'go-mode-hook
-;;    (lambda ()
-;;      (add-hook 'before-save-hook 'gofmt-before-save)
-;;      (setq tab-width 2)
-;;      (setq indent-tabs-mode 1)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;        AHK customizations           ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(add-to-list 'load-path "~/.emacs.d/ahk-mode")
-(setq ahk-syntax-directory "~/.emacs.d/ahk-mode/Syntax")
-(add-to-list 'auto-mode-alist '("\\.ahk$" . ahk-mode))
-(autoload 'ahk-mode "ahk-mode")
+(add-hook 'go-mode-hook
+   (lambda ()
+     (when (can-use 'go-mode)
+       (autoload 'go-mode "go-mode" "Go editing mode." t)
+       (add-to-list 'auto-mode-alist '("\\.go$" . go-mode))
+       (add-hook 'before-save-hook 'gofmt-before-save)
+       (setq tab-width 2)
+       (setq indent-tabs-mode 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        lua customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(add-to-list 'load-path "~/.emacs.d/lua-mode")
-(autoload 'lua-mode "lua-mode" "Lua editing mode." t)
-(add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
-(add-to-list 'interpreter-mode-alist '("lua" . lua-mode))
+(when (can-use 'lua-mode)
+  (autoload 'lua-mode "lua-mode" "Lua editing mode." t)
+  (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
+  (add-to-list 'interpreter-mode-alist '("lua" . lua-mode)))
