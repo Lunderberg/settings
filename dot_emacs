@@ -1,9 +1,9 @@
 ;; -*-Lisp-*-
 
+(require 'warnings)
 (require 'cl)
-(add-to-list 'load-path "~/.emacs.d/misc")
 
-(setq electric-indent-mode nil)
+(add-to-list 'load-path "~/.emacs.d/misc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Package Management         ;;;
@@ -98,6 +98,7 @@
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
 (setq initial-major-mode 'lisp-mode)
+(setq electric-indent-mode nil)
 
 (require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
 
@@ -216,6 +217,34 @@
 ;;   (delete-indentation))
 ;; (global-set-key [remap just-one-space]
 ;;                 'just-one-space-with-newline)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      git customizations            ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (when (can-use 'git-gutter)
+;;   (require 'git-gutter)
+;;   (global-git-gutter-mode +1)
+;;   (custom-set-variables
+;;    '(git-gutter:hide-gutter t))
+;;   (set-face-foreground 'git-gutter:separator "yellow")
+
+;;   (defun conditional-sep ()
+;;     (interactive)
+;;     (custom-set-variables
+;;      (list 'git-gutter:separator-sign (if (display-graphic-p) "" "|"))))
+;;   (global-set-key (kbd "C-x |") 'conditional-sep))
+
+(defun git-version ()
+  (car (last
+        (split-string
+         (shell-command-to-string "git --version")))))
+
+(unless (version< (git-version) "1.9.4")
+  (can-use 'magit)
+  (global-set-key (kbd "C-c C-g") 'magit-status))
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
