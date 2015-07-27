@@ -49,6 +49,8 @@
 ;;; Display, coloring, fontsize   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(can-use 'rainbow-mode)
+
 ;;Font size 10 on my laptop, 12 everywhere else.
 (defun adjust-font-size ()
   (interactive)
@@ -98,7 +100,12 @@
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
 (setq initial-major-mode 'lisp-mode)
-(setq electric-indent-mode nil)
+
+(setq electric-indent-mode t)
+;; I like electric-indent-mode in some places, but I want C-j to always be newline-and-indent.
+(global-set-key [remap electric-newline-and-maybe-indent]
+                'newline-and-indent)
+
 
 (require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
 
@@ -208,15 +215,11 @@
 (global-set-key [remap save-buffers-kill-terminal]
 		'old-emacs-query-exit)
 
-;; TODO: If at beginning of line, delete-indentation.
-;;       If at end of line, next-line then delete-indentation.
-;;       Otherwise, just-one-space.
-;; (defun just-one-space-with-newline ()
-;;   (interactive)
-;;   (next-line)
-;;   (delete-indentation))
-;; (global-set-key [remap just-one-space]
-;;                 'just-one-space-with-newline)
+(defun just-one-space-with-newline ()
+  (interactive)
+  (just-one-space -1))
+(global-set-key [remap just-one-space]
+                'just-one-space-with-newline)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,6 +300,7 @@
 	       ("e12501" (filename . "e12501"))
 	       ("pyCharGen" (filename . "pyCharGen"))
 	       ("FillMaster" (filename . "FillMaster"))
+               ("GRUTinizer" (filename . "GRUTinizer"))
 	       ("Misc. C" (or
 			   (mode . c-mode)
 			   (mode . c++-mode)))
@@ -344,11 +348,53 @@
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Jump to corresponding header files.
+(defun parent-directory (dir)
+  (unless (equal "/" dir)
+    (file-name-directory (directory-file-name dir))))
+
+(defun find-file-in-hierarchy (current-dir pattern)
+  (let ((filelist (directory-files current-dir 'absolute pattern))
+        (parent (parent-directory (expand-file-name current-dir))))
+    (if (> (length filelist) 0)
+        (car filelist)
+      (when parent
+        (find-file-in-hierarchy parent pattern)))))
+
+(defun find-makefile-compile (clean)
+  (interactive "p")
+  (message "Clean value: %d" clean)
+  (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name) "\\(GNUm\\|M\\|m\\)akefile")))
+    (when file
+      (compile (format "cd %s && make %s"
+                       (file-name-directory file)
+                       (if (= clean 1) "" "clean"))))))
+
+;; TODO: Make this function and the one above it not duplicate code.
+(defun find-makefile-compile-fast (clean)
+  (interactive "p")
+  (message "Clean value: %d" clean)
+  (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name) "\\(GNUm\\|M\\|m\\)akefile")))
+    (when file
+      (compile (format "cd %s && make -j %s"
+                       (file-name-directory file)
+                       (if (= clean 1) "" "clean"))))))
+
+(require 'ansi-color)
+(defun colorize-compilation-buffer ()
+  (toggle-read-only)
+  (ansi-color-apply-on-region (point-min) (point-max))
+  (toggle-read-only))
+(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
 (add-hook 'c-initialization-hook '(lambda ()
 				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
-				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
+				    (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)
+                                    (define-key c-mode-base-map (kbd "C-j") 'newline-and-indent)
+                                    (define-key c-mode-base-map (kbd "C-c c") 'find-makefile-compile)
+                                    (define-key c-mode-base-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
+
 (setq-default ff-always-in-other-window nil)
+(add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
 (setq cc-other-file-alist '(("\\.cc\\'"
                              (".hh" ".h"))
                             ("\\.hh\\'"
@@ -356,7 +402,7 @@
                             ("\\.c\\'"
                              (".h"))
                             ("\\.h\\'"
-                             (".c" ".cc" ".C" ".CC" ".cxx" ".cpp"))
+                             (".cxx" ".c" ".cc" ".C" ".CC" ".cpp"))
                             ("\\.C\\'"
                              (".H" ".hh" ".h"))
                             ("\\.H\\'"
@@ -374,24 +420,36 @@
                             ("\\.hpp\\'"
                              (".cpp"))
                             ("\\.cxx\\'"
-                             (".hxx" ".hh" ".h"))
+                             (".h" ".hxx" ".hh"))
                             ("\\.hxx\\'"
                              (".cxx"))))
 (setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"
                               "./*/include" "../include/*" "../include/*/detail"
                                "../../src" "../../include"
-                               "../../../src" "../libraries/*"))
+                               "../../../src" "../libraries/*"
+                               "../../../include" "../libraries/*/*"
+                               ))
 
 ;;Use Astyle
-(autoload 'apply-rcs-patch "~/.emacs.d/rcs-patch.el")
+(defvar astyle-options '() "Options to be passed to astyle")
+(add-to-list 'astyle-options "--style=java")
+(add-to-list 'astyle-options "--indent=spaces=2")
+(add-to-list 'astyle-options "--add-brackets")
+(add-to-list 'astyle-options "--add-one-line-brackets")
+(add-to-list 'astyle-options "--lineend=linux")
+(add-to-list 'astyle-options "--pad-header")
+(add-to-list 'astyle-options "--unpad-paren")
+
+(autoload 'apply-rcs-patch "~/.emacs.d/misc/rcs-patch.el")
 (defun save-buffer-astyle ()
   (interactive)
   (save-buffer)
   (save-window-excursion
-    (shell-command-on-region (point-min) (point-max)
-			     (format "astyle -A2 -tc -j -J -z2 -H -U | diff %s - --rcs" (buffer-file-name))
-			     (get-buffer-create "*Astyle Diff*") nil
-			     (get-buffer-create "*Astyle Errors*") t)
+    (let ((astyle-option-string (mapconcat 'identity astyle-options " ") ))
+      (shell-command-on-region (point-min) (point-max)
+                               (format "astyle %s | diff %s - --rcs" astyle-option-string (buffer-file-name))
+                               (get-buffer-create "*Astyle Diff*") nil
+                               (get-buffer-create "*Astyle Errors*") t))
     (apply-rcs-patch (get-buffer-create "*Astyle Diff*")))
   (save-buffer))
 
@@ -521,22 +579,31 @@
 ;;;       LaTeX customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Filenames ending in .inc are opened as LaTeX files
+(can-use 'auctex)
+
+;; Filenames ending in .inc are opened as LaTeX files
 (add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
 
-;;Why would I want indent-newline-and-indent instead of the standard?
+;; Why would I want indent-newline-and-indent instead of the standard?
 (eval-after-load 'latex
   '(define-key LaTeX-mode-map (kbd "C-j") 'newline-and-indent))
 
-					;Automatically compile to pdf whenever saving.
+;; Automatically compile to pdf whenever saving.
 (make-subprocess-command latex-compile "scons -u")
 (add-hook 'LaTeX-mode-hook '(lambda ()
 			      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
 
-;;Don't autocomplete to the intermediate files.
+;; Don't autocomplete to the intermediate files.
 (setq completion-ignored-extensions
       (append completion-ignored-extensions
 	      '(".aux" ".fls" ".out" ".pdf" ".toc")))
+
+(defun my-newline-and-indent ()
+  (interactive)
+  (newline)
+  (funcall indent-line-function))
+(add-hook 'LaTeX-mode-hook '(lambda ()
+                              (local-set-key (kbd "C-j") 'my-newline-and-indent)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

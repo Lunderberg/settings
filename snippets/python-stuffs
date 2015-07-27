@@ -18,3 +18,7 @@ def grouper(iterable, n):
 def fix_tcanvases():
     for canvas in ROOT.gROOT.GetListOfCanvases():
         canvas.Update()
+
+#Make ROOT ignore command line arguments.
+#A package shouldn't be reading arguments passed to the main script
+ROOT.PyConfig.IgnoreCommandLineOptions = True
