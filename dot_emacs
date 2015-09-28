@@ -126,7 +126,8 @@
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
   (write-region (point-min) (point-max) new-filename))
-(global-set-key (kbd "C-x C-a") 'save-in-other-file)
+;(global-set-key (kbd "C-x C-a") 'save-in-other-file)
+
 
 ;;Change the DISPLAY variable.
 (defun correct-display-variable ()
@@ -348,6 +349,8 @@
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(global-set-key (kbd "C-c C-g") 'gud-gdb)
+
 (defun parent-directory (dir)
   (unless (equal "/" dir)
     (file-name-directory (directory-file-name dir))))
@@ -428,6 +431,7 @@
                                "../../src" "../../include"
                                "../../../src" "../libraries/*"
                                "../../../include" "../libraries/*/*"
+                               "../../*/include" "../../*/src"
                                ))
 
 ;;Use Astyle
@@ -582,7 +586,7 @@
 (can-use 'auctex)
 
 ;; Filenames ending in .inc are opened as LaTeX files
-(add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
+;;(add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
 
 ;; Why would I want indent-newline-and-indent instead of the standard?
 (eval-after-load 'latex
@@ -657,3 +661,9 @@
   (autoload 'lua-mode "lua-mode" "Lua editing mode." t)
   (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
   (add-to-list 'interpreter-mode-alist '("lua" . lua-mode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;       makefile customizations       ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
