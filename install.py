@@ -79,6 +79,7 @@ if system=='Linux':
     link('dot_tmux.conf','~/.tmux.conf')
     link('dot_gitconfig','~/.gitconfig')
     link('dot_Xdefaults','~/.Xdefaults')
+    link('dot_Xdefaults','~/.Xresources')
 
 link('pylib','~/pylib')
 link('dot_emacs',dot_emacs)
