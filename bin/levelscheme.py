@@ -58,6 +58,8 @@ class LevelScheme(object):
         self.defaults = {}
         self.input = []
         self.yscale = 2
+        self.xscale = 1
+
     def ProcessLine(self,line):
         self.input.append(line)
         command = line.split()
@@ -76,8 +78,11 @@ class LevelScheme(object):
             self.curr_gammas = []
         elif command[0]=='opt':
             self.defaults.update(options(command[1:]))
+        elif command[0]=='xscale':
+            self.xscale = float(command[1])
         elif command[0]=='yscale':
             self.yscale = float(command[1])
+
     def DrawGammaSet(self,levels,gammas,xstart):
         output = []
 
@@ -133,7 +138,8 @@ class LevelScheme(object):
     def OutputString(self):
         output = []
         #Environment begin
-        output.append(r"\begin{{tikzpicture}}[yscale={yscale}]".format(yscale=self.yscale))
+        output.append(r"\begin{{tikzpicture}}[xscale={xscale},yscale={yscale}]".format(xscale=self.xscale,
+                                                                                       yscale=self.yscale))
 
         #y-axis
         ymax = self.MaxLevel()

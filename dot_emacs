@@ -221,6 +221,8 @@
 (global-set-key [remap just-one-space]
                 'just-one-space-with-newline)
 
+(require 're-builder)
+(setq reb-re-syntax 'string)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      git customizations            ;;;
@@ -294,13 +296,13 @@
 	       ("sega_spectcl" (filename . "spectcl"))
 	       ("offline_root" (filename . "offline_root"))
 	       ("GrROOT" (filename . "GrROOT"))
+               ("GRUTinizer" (filename . "GRUTinizer"))
 	       ("DDAS" (or
 			(filename . "ddas")
 			(filename . "DDAS")))
 	       ("e12501" (filename . "e12501"))
 	       ("pyCharGen" (filename . "pyCharGen"))
 	       ("FillMaster" (filename . "FillMaster"))
-               ("GRUTinizer" (filename . "GRUTinizer"))
 	       ("Misc. C" (or
 			   (mode . c-mode)
 			   (mode . c++-mode)))
@@ -375,7 +377,7 @@
   (message "Clean value: %d" clean)
   (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name) "\\(GNUm\\|M\\|m\\)akefile")))
     (when file
-      (compile (format "cd %s && make -j %s"
+      (compile (format "cd %s && make -j8 %s"
                        (file-name-directory file)
                        (if (= clean 1) "" "clean"))))))
 
