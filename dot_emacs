@@ -126,7 +126,7 @@
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
   (write-region (point-min) (point-max) new-filename))
-;(global-set-key (kbd "C-x C-a") 'save-in-other-file)
+;;(global-set-key (kbd "C-x C-a") 'save-in-other-file)
 
 
 ;;Change the DISPLAY variable.
@@ -198,6 +198,13 @@
 	(kill-buffer buffer)
 	(message "File '%s' deleted." filename)))))
 (global-set-key (kbd "C-x n k") 'kill-buffer-and-file)
+
+;;Ignore C-z if you are in X11 mode.
+(defun suspend-frame-if-tty ()
+  (interactive)
+  (if (not (display-graphic-p))
+      (suspend-frame)))
+(global-set-key [remap suspend-frame] 'suspend-frame-if-tty)
 
 ;;Ask before exiting a long-lived session
 (defun live-time ()
@@ -505,7 +512,6 @@
                         (label . -)
                         (substatement-open . 0)
                         (block-open . 0)))
-
     )
   "My C++/C Programming Style")
 
