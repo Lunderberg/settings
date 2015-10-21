@@ -44,6 +44,8 @@ alias ll='ls -lh'
 alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./snapshot"'
 
+alias grab_makefile='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
+
 export LESS="--no-init --quit-if-one-screen --raw-control-chars"
 alias more="less"
 
