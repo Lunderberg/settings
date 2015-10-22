@@ -1,6 +1,5 @@
 # -*-Sh-*-
 
-export EDITOR='/usr/bin/env emacs -nw'
 export PYTHONPATH=$PYTHONPATH:~/pylib
 DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
@@ -35,6 +34,7 @@ alias emacs="emacs -nw"
 alias es="emacs --daemon"
 alias ec="emacsclient -a '' -c"
 alias en="emacsclient -a '' -n"
+export EDITOR="emacsclient -a '' -c -nw"
 
 alias rm='rm -i'
 alias cp='cp -i'
