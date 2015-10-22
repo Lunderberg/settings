@@ -1,0 +1,6 @@
+#name : #include "XXX"
+# key: head
+# --
+#include "`(file-name-nondirectory (file-name-sans-extension (buffer-file-name)))`.${1:h}"
+
+$0
