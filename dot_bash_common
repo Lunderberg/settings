@@ -3,8 +3,13 @@
 export PYTHONPATH=$PYTHONPATH:~/pylib
 DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
-export TERM=xterm-256color
 export XENVIRONMENT=~/.Xresources
+
+if [ -n "$TMUX" ]; then
+    export TERM=screen-256color
+else
+    export TERM=xterm-256color
+fi
 
 # Select a color for the server, random based on hostname.
 if which server_name_color.py > /dev/null; then
