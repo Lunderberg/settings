@@ -65,6 +65,7 @@
 (setq rst-level-face-base-light 30) ;RST section header is abysmal otherwise
 
 (if (or (string= (getenv "TERM") "xterm-256color")
+        (string= (getenv "TERM") "screen-256color")
 	(string= system-type "windows-nt"))
     ;;Coloring things assuming that I have 256 colors.
     (progn
@@ -506,7 +507,7 @@
     (c-offsets-alist . ((arglist-close . c-lineup-arglist)
                         (arglist-intro . +)
                         (arglist-close . 0)
-                        (case-label . 0)
+                        (case-label . +)
                         (statement-case-intro . +)
                         (access-label . -)
                         (label . -)

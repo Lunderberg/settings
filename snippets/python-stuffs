@@ -1,5 +1,11 @@
 # -*- python -*-
 
+#To open an ipython interpreter
+import IPython; IPython.embed()
+
+#To open a ptpython interpreter
+import ptpython.repl; ptpython.repl.embed(globals(), locals())
+
 #Usable LaTeX in the labels of matplotlib graphs
 pylab.rc('text', usetex=True)
 pylab.rc('font', family='serif')

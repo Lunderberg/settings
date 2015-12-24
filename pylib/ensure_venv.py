@@ -6,7 +6,7 @@ script_dir = os.path.dirname(sys.argv[0])
 venv_name = 'venv'
 venv_dir = os.path.join(script_dir, venv_name)
 
-def ensure_venv(requirements=None, python='python3', script=None):
+def ensure_venv(*args, **kwargs):
     '''
     Ensures that the script is being run in a virtual environment.
     If the script is not run in a virtual environment,
@@ -19,14 +19,15 @@ def ensure_venv(requirements=None, python='python3', script=None):
     if hasattr(sys, 'real_prefix'):
         return
 
-    make_venv(requirements, python, script)
+    make_venv(*args, **kwargs)
 
     venv_python = os.path.join(venv_dir,'bin','python')
     args = [venv_python] + sys.argv
     res = subprocess.call(args)
     sys.exit(res)
 
-def make_venv(requirements=None, python='python3', script=None):
+def make_venv(requirements=None, python='python3', script=None,
+              system_site_packages=False):
     '''
     Creates the virtual environment requested.
     If the virtual environment already exists, return immediately.
@@ -63,7 +64,10 @@ def make_venv(requirements=None, python='python3', script=None):
 
     if script is None:
         # Install the virtualenv
-        res = subprocess.call([virtualenv_exe, '-p', python_exe, venv_dir])
+        system_site = ('--system-site-packages' if system_site_packages else
+                       '--no-site-packages')
+        res = subprocess.call([virtualenv_exe, '-p', python_exe,
+                               system_site, venv_dir])
         if res:
             raise VirtualenvRunError('Error while running virtualenv')
 
