@@ -280,10 +280,9 @@
                               :transport-backend (rudel-backend-get 'transport 'tcp)
                               )))
   (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
-  (eval-after-load 'rudel '(lambda ()
-                             (set-face-attribute 'rudel-author-overlay-face nil
-                                                 :background nil
-                                                 :underline "black"))))
+  (eval-after-load 'rudel '((set-face-attribute 'rudel-author-overlay-face nil
+                                                :background nil
+                                                :underline "black"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -676,3 +675,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
+(eval-after-load 'make-mode
+  '(progn
+     (print "asdf Thing is loaded")
+     (define-key makefile-mode-map (kbd "C-c c") 'find-makefile-compile)
+     (define-key makefile-mode-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
