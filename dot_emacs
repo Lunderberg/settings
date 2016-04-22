@@ -588,6 +588,18 @@
 	   )
 	 ,(if user-sentinel `(,user-sentinel process event))))))
 
+(make-subprocess-command execute-current-buffer (buffer-file-name))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      Python customizations         ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(eval-after-load 'python
+  '(define-key python-mode-map (kbd "C-c C-c") 'execute-current-buffer))
+
+;; (require 'python)
+;; (define-key python-mode-map (kbd "C-c C-c") 'execute-current-buffer)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -627,25 +639,35 @@
   (autoload 'pov-mode "pov-mode" "PoV-Ray scene file" t)
   (add-to-list 'auto-mode-alist '("\\.pov\\'" . pov-mode))
 
-  ;;Display the image in another window.
-  (defun povray-render-sentinel (process event)
-    (let* ((success (string-equal event "finished\n"))
-           (povfile-buffer (get-buffer (format "%s" process)))
-           (povfile-window (get-buffer-window povfile-buffer))
-           (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
-           (png-buffer (get-file-buffer png-filename)))
-      (if success	(progn
-                          (if (display-graphic-p) (progn
-                                                    (if png-buffer (kill-buffer png-buffer))
-                                                    (find-file-other-window png-filename)
-                                                    (other-window -1)))))))
+
+  ;; ;;Display the image in another window.
+  ;; (defun povray-render-sentinel (process event)
+  ;;   (let* ((success (string-equal event "finished\n"))
+  ;;          (povfile-buffer (get-buffer (format "%s" process)))
+  ;;          (povfile-window (get-buffer-window povfile-buffer))
+  ;;          (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
+  ;;          (png-buffer (get-file-buffer png-filename)))
+  ;;     (if success	(progn
+  ;;                         (if (display-graphic-p) (progn
+  ;;                                                   (if png-buffer (kill-buffer png-buffer))
+  ;;                                                   (find-file-other-window png-filename)
+  ;;                                                   (other-window -1)))))))
 
   ;;Render the current povray file
   (make-subprocess-command povray-render
-                           (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
-                           povray-render-sentinel)
+                           (format "povray_build.py %s" (buffer-name)))
+
+  ;; ;;Render the current povray file
+  ;; (make-subprocess-command povray-render
+  ;;                          (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
+  ;;                          povray-render-sentinel)
   (eval-after-load 'pov-mode
-    '(define-key pov-mode-map (kbd "C-c C-r") 'povray-render)))
+    '(progn
+       (dolist (key '("C-c C-c 1" "C-c C-c 2" "C-c C-c 3" "C-c C-c 4" "C-c C-c 5"
+                      "C-c C-c c" "C-c C-c e" "C-c C-c h" "C-c C-c i"
+                      "C-c C-c l" "C-c C-c r" "C-c C-c v"))
+         (define-key pov-mode-map (kbd key) nil))
+       (define-key pov-mode-map (kbd "C-c C-c") 'povray-render))))
 
 
 
