@@ -119,10 +119,10 @@
 ;;Automatically make script files be executable
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
-(when (can-use 'keyfreq)
-  (require 'keyfreq)
-  (keyfreq-mode 1)
-  (keyfreq-autosave-mode 1))
+;; (when (can-use 'keyfreq)
+;;   (require 'keyfreq)
+;;   (keyfreq-mode 1)
+;;   (keyfreq-autosave-mode 1))
 
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
@@ -233,6 +233,8 @@
 (require 're-builder)
 (setq reb-re-syntax 'string)
 
+(global-set-key (kbd "C-x y") 'find-file-other-window)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      git customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,9 +257,9 @@
         (split-string
          (shell-command-to-string "git --version")))))
 
-(unless (version< (git-version) "1.9.4")
-  (can-use 'magit)
-  (global-set-key (kbd "C-c C-g") 'magit-status))
+;; (unless (version< (git-version) "1.9.4")
+;;   (can-use 'magit)
+;;   (global-set-key (kbd "C-c C-g") 'magit-status))
 
 
 
@@ -265,24 +267,24 @@
 ;;;    rudel customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (can-use 'rudel)
-  (autoload 'rudel-join-session "rudel-loaddefs" "Rudel" t)
-  (defun rudel-better-join (user color)
-    (interactive "sUsername: \nsColor: ")
-    (rudel-join-session (list :encryption nil
-                              :username user
-                              :color color
-                              :global-password nil
-                              :user-password nil
-                              :host "bluegill"
-                              :port 6522
-                              :protocol-backend (rudel-backend-get 'protocol 'obby)
-                              :transport-backend (rudel-backend-get 'transport 'tcp)
-                              )))
-  (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
-  (eval-after-load 'rudel '((set-face-attribute 'rudel-author-overlay-face nil
-                                                :background nil
-                                                :underline "black"))))
+;; (when (can-use 'rudel)
+;;   (autoload 'rudel-join-session "rudel-loaddefs" "Rudel" t)
+;;   (defun rudel-better-join (user color)
+;;     (interactive "sUsername: \nsColor: ")
+;;     (rudel-join-session (list :encryption nil
+;;                               :username user
+;;                               :color color
+;;                               :global-password nil
+;;                               :user-password nil
+;;                               :host "bluegill"
+;;                               :port 6522
+;;                               :protocol-backend (rudel-backend-get 'protocol 'obby)
+;;                               :transport-backend (rudel-backend-get 'transport 'tcp)
+;;                               )))
+;;   (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
+;;   (eval-after-load 'rudel '((set-face-attribute 'rudel-author-overlay-face nil
+;;                                                 :background nil
+;;                                                 :underline "black"))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,8 +303,6 @@
 	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
 	       ("omnicolor-images" (filename . "omnicolor-images"))
                ("battle-bots" (filename . "battle-bots"))
-	       ("sega_spectcl" (filename . "spectcl"))
-	       ("offline_root" (filename . "offline_root"))
 	       ("GrROOT" (filename . "GrROOT"))
                ("GRUTinizer" (filename . "GRUTinizer"))
 	       ("DDAS" (or
@@ -354,11 +354,10 @@
   (yas-global-mode 1)
   (setq yas-snippet-dirs '("~/.emacs.d/snippets")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;        C++ customizations          ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(global-set-key (kbd "C-c C-g") 'gud-gdb)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;       makefile customizations       ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun parent-directory (dir)
   (unless (equal "/" dir)
@@ -372,24 +371,32 @@
       (when parent
         (find-file-in-hierarchy parent pattern)))))
 
+(setq compilation-scroll-output 'first-error)
+
+(defun determine-compile-program (filename)
+  (cond ((string-match "\\(GNUm\\|M\\|m\\)akefile" filename) "make")
+        ((equal filename "SConstruct") "scons")))
+
+(defun find-makefile-compile-impl (clean threads)
+  (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name)
+                                      "\\(\\(GNUm\\|M\\|m\\)akefile\\)\\|\\(SConstruct\\)")))
+    (when file
+      (let* ((directory (file-name-directory file))
+             (filename (file-name-nondirectory file))
+             (program (determine-compile-program filename))
+             (cleanflag (if clean
+                            (if (equal program "make") "clean" "-c")
+                          "")))
+        (compile (format "cd \"%s\" && %s -j%d %s"
+                         directory program threads cleanflag))))))
+
 (defun find-makefile-compile (clean)
   (interactive "p")
-  (message "Clean value: %d" clean)
-  (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name) "\\(GNUm\\|M\\|m\\)akefile")))
-    (when file
-      (compile (format "cd %s && make %s"
-                       (file-name-directory file)
-                       (if (= clean 1) "" "clean"))))))
+  (find-makefile-compile-impl (> clean 1) 1))
 
-;; TODO: Make this function and the one above it not duplicate code.
 (defun find-makefile-compile-fast (clean)
   (interactive "p")
-  (message "Clean value: %d" clean)
-  (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name) "\\(GNUm\\|M\\|m\\)akefile")))
-    (when file
-      (compile (format "cd %s && make -j8 %s"
-                       (file-name-directory file)
-                       (if (= clean 1) "" "clean"))))))
+  (find-makefile-compile-impl (> clean 1) 8))
 
 (require 'ansi-color)
 (defun colorize-compilation-buffer ()
@@ -397,6 +404,33 @@
   (ansi-color-apply-on-region (point-min) (point-max))
   (toggle-read-only))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
+
+(add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
+(eval-after-load 'make-mode
+  '(progn
+     (define-key makefile-mode-map (kbd "C-c c") 'find-makefile-compile)
+     (define-key makefile-mode-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;        C++ customizations          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;(when (can-use 'helm)
+
+;; (when (and (can-use 'async)
+;;            (can-use 'popup))
+;;   (add-to-list 'load-path "~/.emacs.d/helm")
+
+
+;;   (setq helm-gtags-prefix-key "M-`")
+;;   (require 'helm)
+;;   (require 'helm-command)
+;;   (global-set-key (kbd "M-x") 'helm-M-x)
+;;   (helm-mode)
+;;   )
+
+(global-set-key (kbd "C-c C-g") 'gud-gdb)
+
 
 (add-hook 'c-initialization-hook '(lambda ()
 				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
@@ -597,26 +631,25 @@
 ;;(add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
 
 ;; Why would I want indent-newline-and-indent instead of the standard?
-(eval-after-load 'latex
-  '(define-key LaTeX-mode-map (kbd "C-j") 'newline-and-indent))
+(defun my-newline-and-indent ()
+  (interactive)
+  (newline)
+  (funcall indent-line-function))
 
-;; Automatically compile to pdf whenever saving.
-(make-subprocess-command latex-compile "scons -u")
 (add-hook 'LaTeX-mode-hook '(lambda ()
-			      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
+  (local-set-key (kbd "C-j") 'my-newline-and-indent)
+  (local-set-key (kbd "C-c c") 'find-makefile-compile)
+  (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)))
+
+;; ;; Automatically compile to pdf whenever saving.
+;; (make-subprocess-command latex-compile "scons -u")
+;; (add-hook 'LaTeX-mode-hook '(lambda ()
+;; 			      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
 
 ;; Don't autocomplete to the intermediate files.
 (setq completion-ignored-extensions
       (append completion-ignored-extensions
 	      '(".aux" ".fls" ".out" ".pdf" ".toc")))
-
-(defun my-newline-and-indent ()
-  (interactive)
-  (newline)
-  (funcall indent-line-function))
-(add-hook 'LaTeX-mode-hook '(lambda ()
-                              (local-set-key (kbd "C-j") 'my-newline-and-indent)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      PoV-Ray customizations      ;;;
@@ -648,9 +681,9 @@
 
 
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ;;;      golang  customizations      ;;;
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      golang  customizations      ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook 'go-mode-hook
    (lambda ()
@@ -669,14 +702,3 @@
   (autoload 'lua-mode "lua-mode" "Lua editing mode." t)
   (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
   (add-to-list 'interpreter-mode-alist '("lua" . lua-mode)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;       makefile customizations       ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
-(eval-after-load 'make-mode
-  '(progn
-     (print "asdf Thing is loaded")
-     (define-key makefile-mode-map (kbd "C-c c") 'find-makefile-compile)
-     (define-key makefile-mode-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
