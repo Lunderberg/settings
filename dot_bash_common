@@ -58,6 +58,7 @@ alias root='root -l'
 alias grep='grep --color=auto'
 alias py='ipython'
 alias py3='ipython3'
+alias pyx='xterm -e ipython3 &'
 alias vnc='x11vnc -usepw -display :0 --forever'
 alias lynx='lynx --accept-all-cookies'
 alias ssh='ssh -Y'
@@ -67,7 +68,13 @@ alias psgrep='ps aux | grep'
 
 alias cd..="cd .."
 
-alias addpath='export PATH=`pwd`:$PATH'
+function addpath() {
+    if [ $# -ge 1 ]; then
+        export PATH=$1:$PATH
+    else
+        export PATH=`pwd`:$PATH
+    fi
+}
 
 #Stop ^S from freezing the screen until ^Q is given.
 stty -ixon 2> /dev/null
@@ -90,6 +97,7 @@ command_not_found_handle() {
         /usr/lib/command-not-found -- "$1"
         return $?
     else
+        echo "Unknown command: $1"
         return 127
     fi
 }

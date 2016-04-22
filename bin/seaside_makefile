@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# To use, add "SHELL = seaside_makefile" to the top of your makefile.
+
+if [ "$1" = "-c" ]; then
+    COMMAND=${@:2}
+else
+    COMMAND=${@:1}
+fi
+PROGRAM=$(echo $COMMAND | cut -d ' ' -f 1)
+JOIN=oe
+REQS="nodes=1,walltime=10:00:00"
+
+function generate_script {
+    SEASIDE_SCRIPT_DIR=${SEASIDE_SCRIPT_DIR:-~/.seaside_scripts}
+    SEASIDE_SCRIPT=$(mktemp --tmpdir=${SEASIDE_SCRIPT_DIR} $PROGRAM.XXXXXXXXX.sh)
+    NAME=$(basename ${SEASIDE_SCRIPT})
+
+    read -d '' SCRIPT_CONTENTS <<EOF
+#!/bin/bash
+
+### name of the job
+#PBS -N ${NAME}
+### combine stdout/stderr
+#PBS -j ${JOIN}
+### time request (in HH:MM:SS)
+#PBS -l ${REQS}
+
+# Export all variables to the subprocess
+set -a
+$(set | grep -v 'BASHOPTS\|BASH_VERSINFO\|EUID\|PPID\|SHELLOPTS\|UID')
+
+cd $(pwd)
+set -o pipefail
+${COMMAND}
+exit \$?
+EOF
+
+    printf "%s" "${SCRIPT_CONTENTS}" > ${SEASIDE_SCRIPT}
+    chmod u+x ${SEASIDE_SCRIPT}
+}
+
+function run_script {
+    CWD=$1
+    SCRIPT_NAME=$2
+
+    # Avoid submitting all jobs at exactly the same time.
+    NSECONDS=1
+    TIME=$(bc -l <<< "$NSECONDS * ($RANDOM/32768)")
+    sleep ${TIME}s
+
+    cd "${CWD}";
+    JOB_ID=$(qsub ${SCRIPT_NAME} | cut -d . -f 1)
+
+    while [ "$STATUS" != "C" ]; do
+        sleep 1
+        STATUS=$(qstat $JOB_ID | grep $JOB_ID | tr -s ' ' | cut -d ' ' -f 5)
+    done
+
+    RETURN=$(qstat $JOB_ID -f | grep exit_status | rev | cut -d ' ' -f 1 | rev)
+    if [ "$RETURN" -eq 0 ]; then
+        STDOUT_FILE=$(basename $SCRIPT_NAME).o$JOB_ID
+        rm -f $STDOUT_FILE
+        rm -f $SCRIPT_NAME
+    fi
+    return $RETURN
+}
+
+function run_script_remotely {
+    SCRIPT_NAME=$1
+
+    ssh seaside "$(typeset -f run_script); run_script \"$(pwd)\" \"$SCRIPT_NAME\"" 2> /dev/null
+    return $?
+}
+
+generate_script
+run_script_remotely ${SEASIDE_SCRIPT}
+exit $?
