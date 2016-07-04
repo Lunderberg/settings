@@ -72,7 +72,7 @@ class QStat(object):
             for _ in range(10):
                 try:
                     self.update()
-                except ParseError as e:
+                except XML_Tree.ParseError as e:
                     time.sleep(1)
                 else:
                     break
