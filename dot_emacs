@@ -405,6 +405,10 @@
   (toggle-read-only))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
+(defun colorize-current-buffer ()
+  (interactive)
+  (ansi-color-apply-on-region (point-min) (point-max)))
+
 (add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
 (eval-after-load 'make-mode
   '(progn
@@ -474,7 +478,7 @@
                                "../../src" "../../include"
                                "../../../src" "../libraries/*"
                                "../../../include" "../libraries/*/*"
-                               "../../*/include" "../../*/src"
+                               "../../*/include" "../../*/src" "../*/*/src"
                                ))
 
 ;;Use Astyle
@@ -651,7 +655,8 @@
 (add-hook 'LaTeX-mode-hook '(lambda ()
   (local-set-key (kbd "C-j") 'my-newline-and-indent)
   (local-set-key (kbd "C-c c") 'find-makefile-compile)
-  (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)))
+  (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)
+  (electric-indent-local-mode nil)))
 
 ;; ;; Automatically compile to pdf whenever saving.
 ;; (make-subprocess-command latex-compile "scons -u")
