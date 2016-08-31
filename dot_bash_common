@@ -13,9 +13,9 @@ fi
 
 # Select a color for the server, random based on hostname.
 if which server_name_color.py > /dev/null; then
-    SERVER_COLOR=`server_name_color.py`
+    export SERVER_COLOR=`server_name_color.py`
 else
-    SERVER_COLOR="1;32"
+    export SERVER_COLOR="1;32"
 fi
 export PS1="\[\e[1;32m\]\u@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
@@ -47,7 +47,7 @@ alias mv='mv -i'
 alias ls='ls --color=auto'
 alias ll='ls -lh'
 alias lll='ll -a'
-alias duh='du -d 1 -h --exclude "./snapshot"'
+alias duh='du -d 1 -h --exclude "./.snapshot"'
 
 alias grab_makefile='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
 alias grab_ensure_venv='wget https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
