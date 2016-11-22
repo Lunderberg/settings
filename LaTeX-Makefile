@@ -2,9 +2,9 @@ targets := $(patsubst %.tex,%.pdf,$(wildcard *.tex))
 outputDir=$(shell cat outputDir)
 
 define PDF_COMMANDS
-pdflatex $<
-pdflatex $<
-while grep '^LaTeX Warning: .* Rerun to get cross-references right.' $(patsubst %.tex,%.log,$<); do pdflatex $<; done
+pdflatex -interaction=nonstopmode $<
+pdflatex -interaction=nonstopmode $<
+while grep '^LaTeX Warning: .* Rerun to get cross-references right.' $(patsubst %.tex,%.log,$<); do pdflatex -interaction=nonstopmode $<; done
 if [ -n "$(outputDir)" ]; then cp $@ $(outputDir)/$@; fi
 endef
 
