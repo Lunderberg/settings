@@ -109,6 +109,7 @@
 
 
 (require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
+(global-set-key (kdb "C-x F") 'find-name-dired) ; Find all files matching name.
 
 ;;M-<up> and M-<down> to scroll up/down by one line.
 (global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-down 1)))
