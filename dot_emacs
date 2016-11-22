@@ -127,7 +127,7 @@
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
   (write-region (point-min) (point-max) new-filename))
-;;(global-set-key (kbd "C-x C-a") 'save-in-other-file)
+(global-set-key (kbd "C-x C-z") 'save-in-other-file)
 
 
 ;;Change the DISPLAY variable.
@@ -329,6 +329,8 @@ is binary, activate `hexl-mode'."
 (setq ibuffer-saved-filter-groups
       (quote (("default"
 	       ("org" (mode . org-mode))
+               ("pythoth" (filename . "pythoth"))
+               ("ucgretina" (filename . "ucgretina"))
 	       ("hermes" (filename . "hermes"))
                ("lua-bindings" (filename . "lua-bindings"))
 	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
@@ -336,6 +338,7 @@ is binary, activate `hexl-mode'."
                ("battle-bots" (filename . "battle-bots"))
 	       ("GrROOT" (filename . "GrROOT"))
                ("GRUTinizer" (filename . "GRUTinizer"))
+               ("SegaGeant" (filename . "SegaGeant"))
 	       ("DDAS" (or
 			(filename . "ddas")
 			(filename . "DDAS")))
@@ -577,6 +580,7 @@ is binary, activate `hexl-mode'."
                         (arglist-close . 0)
                         (case-label . +)
                         (statement-case-intro . +)
+                        ;; (inclass . ++) ; For extra indenting after public:
                         (access-label . -)
                         (label . -)
                         (substatement-open . 0)
@@ -665,8 +669,11 @@ is binary, activate `hexl-mode'."
 (eval-after-load 'python
   '(define-key python-mode-map (kbd "C-c C-c") 'execute-current-buffer))
 
-;; (require 'python)
-;; (define-key python-mode-map (kbd "C-c C-c") 'execute-current-buffer)
+;; electric-indent-mode does the complete wrong thing in many cases in python
+;; When typing a colon, it re-indents the current line,
+;;   even if I have already set the desired indentation.
+(add-hook 'python-mode-hook '(lambda ()
+   (electric-indent-mode -1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
@@ -687,6 +694,7 @@ is binary, activate `hexl-mode'."
   (local-set-key (kbd "C-j") 'my-newline-and-indent)
   (local-set-key (kbd "C-c c") 'find-makefile-compile)
   (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)
+  (TeX-fold-mode 1)
   (electric-indent-local-mode nil)))
 
 ;; ;; Automatically compile to pdf whenever saving.
