@@ -414,7 +414,7 @@ is binary, activate `hexl-mode'."
 
 (defun find-makefile-compile-impl (clean threads)
   (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name)
-                                      "\\(\\(GNUm\\|M\\|m\\)akefile\\)\\|\\(SConstruct\\)")))
+                                      "^\\(\\(GNUm\\|M\\|m\\)akefile$\\)\\|\\(SConstruct$\\)")))
     (when file
       (let* ((directory (file-name-directory file))
              (filename (file-name-nondirectory file))
