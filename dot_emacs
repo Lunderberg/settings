@@ -674,7 +674,7 @@ is binary, activate `hexl-mode'."
 ;; When typing a colon, it re-indents the current line,
 ;;   even if I have already set the desired indentation.
 (add-hook 'python-mode-hook '(lambda ()
-   (electric-indent-mode -1)))
+   (electric-indent-local-mode -1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
