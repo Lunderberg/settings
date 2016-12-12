@@ -37,8 +37,8 @@ alias dis='export $(tmux showenv | grep DISPLAY)'
 
 eval $(dircolors ~/.dir_colors)
 
-alias emacs="emacs -nw"
-alias es="emacs --daemon"
+#alias emacs="emacs -nw"
+#alias es="emacs --daemon"
 alias ec="emacsclient -a '' -c"
 alias en="emacsclient -a '' -n"
 export EDITOR="emacsclient -a '' -c -nw"
