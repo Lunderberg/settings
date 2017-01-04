@@ -1,0 +1,16 @@
+# -*- mode: snippet -*-
+# name: pybind_module
+# key: pybind
+# group: pybind
+# --
+#include "pybind11/pybind11.h"
+
+namespace py = pybind11;
+
+PYBIND11_PLUGIN($1) {
+  py::module m("$1", "Description");
+
+  $0
+
+  return m.ptr();
+}
