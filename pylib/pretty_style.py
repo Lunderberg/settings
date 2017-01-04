@@ -55,8 +55,10 @@ def sample_plot():
 
     axes.plot(xvals, yvals)
 
+# Because I'm lazy, and want this to happen by default
+load_style()
+
 if __name__=='__main__':
-    load_style()
     sample_plot()
     sample_hist()
     plt.show()
