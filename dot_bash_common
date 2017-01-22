@@ -51,6 +51,7 @@ alias ll='ls -lh'
 alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./.snapshot"'
 
+alias grab_sconstruct='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
 alias grab_makefile='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
 alias grab_ensure_venv='wget https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
 
