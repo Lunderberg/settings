@@ -42,8 +42,30 @@ def hist_errors(self, *args, **kwargs):
     return (bin_content, bin_edges, bin_errors,
             [hist_patch, fill_patch])
 
+def better_step(self, x, y, *args, **kwargs):
+    if len(x) == len(y)+1:
+        y = np.insert(y, 0, y[0])
+    self.step(x, y, *args, **kwargs)
+
+def fill_between_step(self, x, y1, y2, *args, **kwargs):
+    if len(x) == len(y1):
+        x = np.array(x)
+        first_point = x[0] - (x[1] - x[0])/2.0
+        middle = x[:-1] + (x[1:] - x[:-1])/2.0
+        last_point = x[-1] + (x[-1] - x[-2])/2.0
+        x = np.concatenate(([first_point], middle, [last_point]))
+
+    x = [a for b in zip(x[:-1],x[1:]) for a in b]
+    y1 = [a for b in zip(y1, y1) for a in b]
+    y2 = [a for b in zip(y2, y2) for a in b]
+
+    self.fill_between(x, y1, y2, *args, **kwargs)
+
+
 
 matplotlib.axes._axes.Axes.hist_errors = hist_errors
+matplotlib.axes._axes.Axes.better_step = better_step
+matplotlib.axes._axes.Axes.fill_between_step = fill_between_step
 
 
 if __name__=='__main__':
