@@ -43,6 +43,16 @@ def link(source,dest):
         symlink(source,dest)
         print "{0} linked to {1}".format(dest,source)
 
+def link_all_ipython():
+    ipython_dir = path('~','.ipython','profile_default','startup')
+    if not os.path.exists(ipython_dir):
+        os.makedirs(ipython_dir)
+
+    for startup_file in glob(os.path.join('ipython_startup','*.py')):
+        script_name = os.path.basename(startup_file)
+        link(startup_file, os.path.join(ipython_dir, script_name))
+
+
 git_bin = 'git' if system=='Linux' else 'c:/Program Files (x86)/Git/bin/git.exe'
 def clone_git(url,outputDir):
     name = url[url.rfind('/')+1:url.rfind('.')]
@@ -80,6 +90,7 @@ if system=='Linux':
     link('dot_gitconfig','~/.gitconfig')
     link('dot_Xdefaults','~/.Xdefaults')
     link('dot_Xdefaults','~/.Xresources')
+    link_all_ipython()
 
 link('pylib','~/pylib')
 link('dot_emacs',dot_emacs)
