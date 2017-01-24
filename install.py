@@ -96,6 +96,7 @@ link('pylib','~/pylib')
 link('dot_emacs',dot_emacs)
 link('dot_emacs.d',emacs_dir)
 
-for tarball in sorted(glob(path('pypackages','*.tar.gz'))+
-                      glob(path('pypackages','*.tgz'))):
-    installPyPackage(tarball)
+# Not needed so much now that the lab has pip installed.
+# for tarball in sorted(glob(path('pypackages','*.tar.gz'))+
+#                       glob(path('pypackages','*.tgz'))):
+#     installPyPackage(tarball)
