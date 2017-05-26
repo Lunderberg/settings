@@ -69,7 +69,7 @@ alias pyx='xterm -e ipython3 &'
 alias vnc='x11vnc -usepw -display :0 --forever'
 alias lynx='lynx --accept-all-cookies'
 alias ssh='ssh -Y'
-alias scons='scons -U'
+#alias scons='scons -U'
 alias hamres='hamachi logoff; sleep 5; hamachi logon'
 alias psgrep='ps aux | grep'
 
