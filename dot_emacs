@@ -97,10 +97,15 @@
 (scroll-bar-mode -1) ;Hide the scroll bar
 (global-set-key (kbd "<Scroll_Lock>") 'ignore) ;Otherwise, emacs dings whenever I alt-tab in.
 (global-set-key (kbd "M-;") 'comment-or-uncomment-region) ;Preferred over comment-dwim
-(add-hook 'before-save-hook 'delete-trailing-whitespace) ;I hate trailing whitespace
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
 (setq initial-major-mode 'lisp-mode)
+
+;; I hate trailing whitespace
+;; Stricter version, remove all trailing whitespace
+;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
+;; Less strict version, only remove trailing ws from modified lines
+(when (can-use 'ws-butler) (ws-butler-global-mode))
 
 (setq electric-indent-mode t)
 ;; I like electric-indent-mode in some places, but I want C-j to always be newline-and-indent.
@@ -696,6 +701,7 @@ is binary, activate `hexl-mode'."
   (local-set-key (kbd "C-c c") 'find-makefile-compile)
   (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)
   (TeX-fold-mode 1)
+  (auto-fill-mode 1)
   (electric-indent-local-mode nil)))
 
 ;; ;; Automatically compile to pdf whenever saving.
