@@ -701,6 +701,7 @@ is binary, activate `hexl-mode'."
   (local-set-key (kbd "C-c c") 'find-makefile-compile)
   (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)
   (TeX-fold-mode 1)
+  (auto-fill-mode 1)
   (electric-indent-local-mode nil)))
 
 ;; ;; Automatically compile to pdf whenever saving.

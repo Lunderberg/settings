@@ -11,6 +11,7 @@ pylab.rc('text', usetex=True)
 pylab.rc('font', family='serif')
 
 #To open an interpreter while using pyqt4
+from PyQt4 import QtCore
 QtCore.pyqtRemoveInputHook()
 import IPython; IPython.embed()
 QtCore.pyqtRestoreInputHook()

@@ -51,9 +51,9 @@ alias ll='ls -lh'
 alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./.snapshot"'
 
-alias grab_sconstruct='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
-alias grab_makefile='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
-alias grab_ensure_venv='wget https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
+alias grab_sconstruct='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
+alias grab_makefile='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
+alias grab_ensure_venv='wget --no-cache https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
 
 export LESS="--no-init --quit-if-one-screen --raw-control-chars"
 alias more="less"
@@ -69,7 +69,7 @@ alias pyx='xterm -e ipython3 &'
 alias vnc='x11vnc -usepw -display :0 --forever'
 alias lynx='lynx --accept-all-cookies'
 alias ssh='ssh -Y'
-alias scons='scons -u'
+#alias scons='scons -U'
 alias hamres='hamachi logoff; sleep 5; hamachi logon'
 alias psgrep='ps aux | grep'
 
@@ -108,3 +108,11 @@ command_not_found_handle() {
         return 127
     fi
 }
+
+if which loginctl > /dev/null && loginctl >& /dev/null; then
+    if loginctl show-user | grep KillUserProcesses | grep -q yes; then
+        echo "systemd is set to kill user processes on logoff"
+        echo "This will break screen, tmux, emacs --daemon, nohup, etc"
+        echo "Tell the sysadmin to set KillUserProcesses=no in /etc/systemd/login.conf"
+    fi
+fi
