@@ -590,6 +590,7 @@ is binary, activate `hexl-mode'."
                         (access-label . -)
                         (label . -)
                         (substatement-open . 0)
+                        (innamespace . [0])
                         (block-open . 0)))
     )
   "My C++/C Programming Style")
