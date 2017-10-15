@@ -7,10 +7,8 @@
 
 namespace py = pybind11;
 
-PYBIND11_PLUGIN($1) {
-  py::module m("$1", "Description");
+PYBIND11_MODULE($1, m) {
+  m.doc() = "Module description";
 
   $0
-
-  return m.ptr();
 }
