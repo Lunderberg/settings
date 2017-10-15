@@ -51,9 +51,9 @@ alias ll='ls -lh'
 alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./.snapshot"'
 
-alias grab_sconstruct='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
-alias grab_makefile='wget https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
-alias grab_ensure_venv='wget https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
+alias grab_sconstruct='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
+alias grab_makefile='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/Makefile'
+alias grab_ensure_venv='wget --no-cache https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
 
 export LESS="--no-init --quit-if-one-screen --raw-control-chars"
 alias more="less"

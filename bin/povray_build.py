@@ -23,6 +23,7 @@ def render_png(pov_file, args):
     args = args[:]
     unbuffer = ['stdbuf','-i0','-o0','-e0']
     command = ['povray','-D'] + args + [pov_file]
+    print(' '.join(command))
     proc = subprocess.Popen(command, stderr=subprocess.PIPE)
 
     print()
@@ -57,9 +58,10 @@ def better_readline(stream):
     return ''.join(line_chars)
 
 
-def frame_gen(pov_file, args, initial_time):
+def frame_gen(pov_file, args, initial_time=0, time_scaling=1.0):
+
     def make_frame(time):
-        actual_time = time + initial_time
+        actual_time = time*time_scaling + initial_time
         all_args = ['Clock={}'.format(actual_time)] + args
 
         with tempfile.TemporaryDirectory() as workdir:
@@ -73,35 +75,71 @@ def frame_gen(pov_file, args, initial_time):
 
 def render_gif(pov_file, args):
     prog_args = []
-    FPS = None
-    initial_clock = 0
-    final_clock = None
+
+    clock_args = {'fps': None,
+                  'initial_clock': 0,
+                  'final_clock': None,
+                  'initial_frame': 0,
+                  'final_frame': None,
+                  }
+
     for arg in args:
         if '=' in arg:
             key,value = arg.split('=')
             key = key.strip().lower()
-            if key == 'initial_clock':
-                initial_clock = float(value)
-            elif key == 'final_clock':
-                final_clock = float(value)
-            elif key == 'fps':
-                FPS = float(value)
+            if key in clock_args:
+                clock_args[key] = float(value)
             else:
                 prog_args.append(arg)
         else:
             prog_args.append(arg)
 
-    if final_clock is None:
-        raise ValueError('Final_Clock must be set at top of file')
+
+    FPS = clock_args['fps']
+    initial_clock = clock_args['initial_clock']
+    final_clock = clock_args['final_clock']
+    initial_frame = clock_args['initial_frame']
+    final_frame = clock_args['final_frame']
+    time_scaling = 1.0
+
+    if (FPS is not None and
+        final_clock is not None and
+        final_frame is not None):
+        would_be_FPS = (final_frame-initial_frame) / (final_clock-initial_clock)
+        time_scaling = FPS / would_be_FPS
 
     if FPS is None:
-        raise ValueError('FPS must be set at top of file')
+        if (final_clock is not None and
+            final_frame is not None):
+            FPS = (final_clock-initial_clock) / (final_frame-initial_frame)
+        else:
+            raise ValueError('FPS must be set at top of file')
 
-    make_frame = frame_gen(pov_file, prog_args, initial_clock)
-    clip = VideoClip(make_frame, duration=final_clock-initial_clock)
-    output_gif = pov_file.replace('.pov','.gif')
-    clip.write_gif(output_gif, fps=FPS,
-                   program='ffmpeg')
+    if final_clock is None:
+        if (FPS is not None and
+            final_frame is not None):
+            final_clock = initial_clock + (final_frame-initial_frame)/FPS
+        else:
+            raise ValueError('Final_Clock must be set at top of file')
+
+    if final_frame is None:
+        if (FPS is not None and
+            final_clock is not None):
+            final_frame = initial_frame + (final_clock-initial_clock)*FPS
+        else:
+            raise ValueError('Final_Frame must be set at top of file')
+
+
+    make_frame = frame_gen(pov_file, prog_args, initial_clock, time_scaling)
+    clip = VideoClip(make_frame, duration=(final_clock-initial_clock)/time_scaling)
+    # output_gif = pov_file.replace('.pov','.gif')
+    # clip.write_gif(output_gif, fps=FPS,
+    #                program='ffmpeg')
+    output_mp4 = pov_file.replace('.pov','.mp4')
+    clip.write_videofile(output_mp4, fps=FPS,
+                         codec='libx264', bitrate='500k',
+                         audio=False)
+    print('')
 
 
 def render(pov_file):
