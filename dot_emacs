@@ -100,6 +100,7 @@
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
 (setq initial-major-mode 'lisp-mode)
+(setq epa-pinentry-mode 'loopback) ; Don't open a new window for gpg password
 
 ;; I hate trailing whitespace
 ;; Stricter version, remove all trailing whitespace
