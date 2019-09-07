@@ -336,6 +336,7 @@ is binary, activate `hexl-mode'."
       (quote (("default"
 	       ("org" (mode . org-mode))
                ("pythoth" (filename . "pythoth"))
+               ("screeps" (filename . "screeps"))
                ("ucgretina" (filename . "ucgretina"))
 	       ("hermes" (filename . "hermes"))
                ("lua-bindings" (filename . "lua-bindings"))
@@ -785,3 +786,12 @@ is binary, activate `hexl-mode'."
 (when (can-use 'rust-mode)
   (autoload 'rust-mode "rust-mode" "Rust editing mode." t)
   (add-to-list 'auto-mode-alist '("\\.rs$" . rust-mode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;     screeps customizations          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(make-subprocess-command upload-screeps-code "~/screeps/upload.py")
+
+(eval-after-load 'javascript-mode
+  `(define-key js-mode-map (kbd "C-c C-c") 'upload-screeps-code))
