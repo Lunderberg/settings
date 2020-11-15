@@ -69,10 +69,10 @@
 	(string= system-type "windows-nt"))
     ;;Coloring things assuming that I have 256 colors.
     (progn
-      (when (can-use 'color-theme)
-        (require 'color-theme)
-        (color-theme-initialize)
-        (color-theme-euphoria)
+      (when (can-use 'color-theme-modern)
+        (require 'color-theme-modern)
+	(load-theme 'euphoria t t)
+	(enable-theme 'euphoria)
         (set-face-foreground 'font-lock-preprocessor-face "light sea green")
         (set-face-foreground 'font-lock-constant-face "light sea green")
         (require 'hl-line)

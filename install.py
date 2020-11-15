@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -36,12 +36,12 @@ def link(source,dest):
     source = os.path.join(fold,source)
     dest = path(dest)
     if os.path.exists(dest):
-        print "{0} exists, not overwriting".format(dest)
+        print("{0} exists, not overwriting".format(dest))
     else:
         if os.path.lexists(dest):
             os.remove(dest)
         symlink(source,dest)
-        print "{0} linked to {1}".format(dest,source)
+        print("{0} linked to {1}".format(dest,source))
 
 def link_all_ipython():
     ipython_dir = path('~','.ipython','profile_default','startup')
@@ -58,17 +58,17 @@ def clone_git(url,outputDir):
     name = url[url.rfind('/')+1:url.rfind('.')]
     outputDir = os.path.join(path(outputDir),name)
     if os.path.exists(outputDir):
-        print '{} exists, skipping'.format(outputDir)
+        print('{} exists, skipping'.format(outputDir))
         return
     subprocess.call([git_bin,'clone','--recursive',url,outputDir])
-    print 'Installed {}'.format(outputDir)
+    print('Installed {}'.format(outputDir))
 
 installed_pypackages = [name for _,name,_ in pkgutil.iter_modules()]
 def installPyPackage(tarball):
     tarpath,filename = os.path.split(tarball)
     for name in installed_pypackages:
         if name in filename:
-            print '{} installed already, skipping'.format(name)
+            print('{} installed already, skipping'.format(name))
             return
     tar = tarfile.open(tarball,'r:gz')
     instpath = path(tarpath,tar.firstmember.name)
@@ -76,7 +76,7 @@ def installPyPackage(tarball):
     subprocess.call(['python','setup.py','install','--user'],
                     cwd=instpath,stdout=open(os.devnull,'wb'))
     shutil.rmtree(instpath)
-    print 'Installed {0}'.format(instpath)
+    print('Installed {0}'.format(instpath))
 
 dot_emacs_path = '~' if system=='Linux' else path('~','AppData','Roaming')
 emacs_dir = path(dot_emacs_path,'.emacs.d')

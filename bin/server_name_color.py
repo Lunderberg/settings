@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import random
 import socket
@@ -26,4 +26,4 @@ valid_colors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20,
 
 random.seed(socket.gethostname())
 color = random.choice(valid_colors)
-print '38;5;{}'.format(color)
+print('38;5;{}'.format(color))

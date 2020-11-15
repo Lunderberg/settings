@@ -5,6 +5,8 @@ DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
 export XENVIRONMENT=~/.Xresources
 
+export PATH=$PATH:$(ls -d /opt/emacs-*/bin)
+
 if [ "$TERM" != "dumb" ]; then
     if [ -n "$TMUX" ]; then
         export TERM=screen-256color
