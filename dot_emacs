@@ -1,7 +1,7 @@
 ;; -*-Lisp-*-
 
 (require 'warnings)
-(require 'cl)
+(require 'cl-lib)
 
 (add-to-list 'load-path "~/.emacs.d/misc")
 
@@ -377,7 +377,7 @@ is binary, activate `hexl-mode'."
 (setq org-startup-folded nil)
 (setq org-agenda-files (list "~/TODO.org" "~/org"))
 (setq org-agenda-files
-      (remove-if-not 'file-exists-p org-agenda-files))
+      (cl-remove-if-not 'file-exists-p org-agenda-files))
 (global-set-key [remap org-beginning-of-line]
                 'smarter-move-beginning-of-line)
 (set-face-background 'org-agenda-clocking "black")
