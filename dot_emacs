@@ -795,6 +795,27 @@ is binary, activate `hexl-mode'."
      (define-key rust-mode-map (kbd "C-c C-t") 'rust-test)
      (setq rust-format-on-save t)))
 
+;; Setup for jump to definition and autocomplete.  Needs installation
+;; of racer and rust source to work.
+;; $ cargo +nightly install racer
+;; $ rustup add component rust-src
+(when (can-use 'racer)
+  (eval-after-load 'rust-mode
+    `(progn
+       ;; Use newer path for rust source.  Needed as of 2021-02-28.
+       ;; Should test if this can be removed in the future.
+       (setq racer-rust-src-path
+             (concat (string-trim (shell-command-to-string "rustc --print sysroot"))
+                     "/lib/rustlib/src/rust/library"))
+       (add-hook 'rust-mode-hook #'racer-mode)
+       (add-hook 'racer-mode-hook #'eldoc-mode)))
+  (when (can-use 'company)
+    (eval-after-load 'rust-mode
+      `(progn
+         (add-hook 'racer-mode-hook #'company-mode)
+         (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
+         (setq company-tooltip-align-annotations t)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     screeps customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
