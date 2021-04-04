@@ -475,6 +475,13 @@ is binary, activate `hexl-mode'."
 ;;   (helm-mode)
 ;;   )
 
+(if (can-use 'cuda-mode)
+    (progn (add-to-list 'auto-mode-alist '("\\.cu$" . cuda-mode))
+           (add-to-list 'auto-mode-alist '("\\.cuh$" . cuda-mode)))
+  (progn (add-to-list 'auto-mode-alist '("\\.cu$" . c++-mode))
+         (add-to-list 'auto-mode-alist '("\\.cuh$" . c++-mode)))
+  )
+
 (global-set-key (kbd "C-c C-g") 'gud-gdb)
 
 
@@ -490,11 +497,11 @@ is binary, activate `hexl-mode'."
 (setq cc-other-file-alist '(("\\.cc\\'"
                              (".hh" ".h"))
                             ("\\.hh\\'"
-                             (".cc" ".C" ".cxx"))
+                             (".cc" ".C" ".cxx" ".cu"))
                             ("\\.c\\'"
                              (".h"))
                             ("\\.h\\'"
-                             (".cxx" ".c" ".cc" ".C" ".CC" ".cpp"))
+                             (".cxx" ".c" ".cc" ".C" ".CC" ".cpp" ".cu"))
                             ("\\.C\\'"
                              (".H" ".hh" ".h"))
                             ("\\.H\\'"
@@ -507,6 +514,11 @@ is binary, activate `hexl-mode'."
                              (".h++" ".hh" ".h"))
                             ("\\.h\\+\\+\\'"
                              (".c++"))
+
+                            ("\\.cu\\'"
+                             (".hh" ".h"))
+                            ("\\.cuh\\'"
+                             (".cu"))
                             ("\\.cpp\\'"
                              (".hpp" ".hh" ".h"))
                             ("\\.hpp\\'"
