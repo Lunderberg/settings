@@ -15,13 +15,15 @@ if [ "$TERM" != "dumb" ]; then
     fi
 fi
 
-# Select a color for the server, random based on hostname.
-if which server_name_color.py > /dev/null; then
-    export SERVER_COLOR=`server_name_color.py`
+# Select a color for the user and server, random based on hostname.
+if which pseudorandom_console_color.py > /dev/null; then
+    export USER_COLOR=`pseudorandom_console_color.py $USER`
+    export SERVER_COLOR=`pseudorandom_console_color.py $HOSTNAME`
 else
+    export USER_COLOR="1;32"
     export SERVER_COLOR="1;32"
 fi
-export PS1="\[\e[1;32m\]\u@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
+export PS1="\[\e[${USER_COLOR}m\]\u@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
 export HISTFILESIZE=10000
 #export PROMPT_COMMAND="history 1 | record_command.py -p"

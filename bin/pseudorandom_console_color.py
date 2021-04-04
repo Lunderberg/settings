@@ -2,6 +2,7 @@
 
 import random
 import socket
+import sys
 
 # Colors that are bright enough to read on a black background
 valid_colors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20,
@@ -24,6 +25,17 @@ valid_colors = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 20,
                 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222,
                 223, 224, 225, 226, 227, 228, 229, 230, 231, 255]
 
-random.seed(socket.gethostname())
-color = random.choice(valid_colors)
-print('38;5;{}'.format(color))
+def random_color(seed):
+    random.seed(seed)
+    return random.choice(valid_colors)
+
+def main():
+    if len(sys.argv) > 1:
+        seed = sys.argv[1]
+    else:
+        seed = socket.gethostname()
+    color = random_color(seed)
+    print('38;5;{}'.format(color))
+
+if __name__=='__main__':
+    main()
