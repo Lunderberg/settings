@@ -23,7 +23,7 @@ else
     export USER_COLOR="1;32"
     export SERVER_COLOR="1;32"
 fi
-export PS1="\[\e[${USER_COLOR}m\]\u@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
+export PS1="\[\e[${USER_COLOR}m\]\u\[\e[1;32m\]@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
 export HISTFILESIZE=10000
 #export PROMPT_COMMAND="history 1 | record_command.py -p"
