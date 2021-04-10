@@ -617,6 +617,12 @@ is binary, activate `hexl-mode'."
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   CMake customizations             ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(can-use 'cmake-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   PHP/Web customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -695,6 +701,9 @@ is binary, activate `hexl-mode'."
 ;;   even if I have already set the desired indentation.
 (add-hook 'python-mode-hook '(lambda ()
    (electric-indent-local-mode -1)))
+
+(when (can-use 'blacken)
+  (add-hook 'python-mode-hook '(lambda () (blacken-mode))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
