@@ -39,6 +39,8 @@ export HISTFILESIZE=10000
 #Same thing, but for tmux.  Much more pleasant to work with.
 alias dis='export $(tmux showenv | grep DISPLAY)'
 
+alias tm='tmux new-session -A -s0'
+
 eval $(dircolors ~/.dir_colors)
 
 #alias emacs="emacs -nw"

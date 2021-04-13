@@ -1,0 +1,17 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: test
+# key: test
+# group: debug
+# --
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_$1() -> Result<(), std::error::Error> {
+        $0
+        assert!(true);
+        assert_eq!(1, 1);
+        Ok(())
+    }
+}
