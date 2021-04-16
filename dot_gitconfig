@@ -5,3 +5,8 @@
 	editor = emacs -nw
 [push]
 	default = simple
+
+# Include at the end so it overrides any other settings.
+# Currently used for work name/email on work account.
+[include]
+        path = ~/.gitconfig_local
