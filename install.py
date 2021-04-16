@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-import subprocess
-import tarfile
-import shutil
 from glob import glob
+import io
+import os
 import pkgutil
 import platform
+import shutil
+import subprocess
+import sys
+import tarfile
+import urllib.request
+import zipfile
 
 fold = os.path.abspath(os.path.dirname(sys.argv[0]))
 system = platform.system()
@@ -78,6 +81,23 @@ def installPyPackage(tarball):
     shutil.rmtree(instpath)
     print('Installed {0}'.format(instpath))
 
+def download_clangd():
+    clangd_symlink = os.path.join(os.path.dirname(__file__), 'bin', 'clangd')
+    clangd_loc = os.path.join(os.path.dirname(__file__), 'bin', 'clangd_12.0.0', 'bin', 'clangd')
+    if os.path.exists(clangd_symlink):
+        return
+
+    url = 'https://github.com/clangd/clangd/releases/download/12.0.0/clangd-linux-12.0.0.zip'
+    response = urllib.request.urlopen(url)
+    contents = io.BytesIO(response.read())
+    zipped = zipfile.ZipFile(contents)
+
+    zipped.extractall(os.path.dirname(clangd_symlink))
+    os.chmod(clangd_loc, 0o554)
+
+    relpath = os.path.relpath(clangd_loc, os.path.dirname(clangd_symlink))
+    os.symlink(relpath, clangd_symlink)
+
 dot_emacs_path = '~' if system=='Linux' else path('~','AppData','Roaming')
 emacs_dir = path(dot_emacs_path,'.emacs.d')
 dot_emacs = path(dot_emacs_path,'.emacs')
@@ -91,6 +111,7 @@ if system=='Linux':
     link('dot_Xdefaults','~/.Xdefaults')
     link('dot_Xdefaults','~/.Xresources')
     link_all_ipython()
+    download_clangd()
 
 link('pylib','~/pylib')
 link('dot_emacs',dot_emacs)

@@ -6,3 +6,6 @@ dot_emacs.d/tramp
 dot_emacs.d/.org-id-locations
 dot_emacs.d/ede-projects.el
 dot_emacs.d/elpa
+bin/clangd
+bin/clangd_12.0.0
+.lsp-session-v1
