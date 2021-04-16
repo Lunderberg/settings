@@ -180,8 +180,7 @@
     (back-to-indentation)
     (when (= orig-point (point))
       (move-beginning-of-line 1))))
-(global-set-key [remap move-beginning-of-line]
-                'smarter-move-beginning-of-line)
+(global-set-key (kbd "C-a") 'smarter-move-beginning-of-line)
 
 ;;Allows for calculations within emacs.
 (defun replace-last-sexp ()
@@ -336,6 +335,11 @@ is binary, activate `hexl-mode'."
 (setq ibuffer-saved-filter-groups
       (quote (("default"
 	       ("org" (mode . org-mode))
+               ("TVM C++" (and (filename . "tvm")
+                               (or (mode . c-mode) (mode . c++-mode))))
+               ("TVM Python" (and (filename . "tvm")
+                                  (mode . python-mode)))
+               ("TVM Misc." (filename . "tvm"))
                ("pythoth" (filename . "pythoth"))
                ("screeps" (filename . "screeps"))
                ("ucgretina" (filename . "ucgretina"))
@@ -375,7 +379,7 @@ is binary, activate `hexl-mode'."
 (global-set-key (kbd "C-c a") 'org-agenda)
 (setq org-log-done t)
 (setq org-startup-folded nil)
-(setq org-agenda-files (list "~/TODO.org" "~/org"))
+(setq org-agenda-files (seq-filter 'file-exists-p (list "~/todo.org" "~/TODO.org" "~/org")))
 (setq org-agenda-files
       (cl-remove-if-not 'file-exists-p org-agenda-files))
 (global-set-key [remap org-beginning-of-line]
@@ -845,3 +849,47 @@ is binary, activate `hexl-mode'."
 
 (eval-after-load 'javascript-mode
   `(define-key js-mode-map (kbd "C-c C-c") 'upload-screeps-code))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;         tvm customizations          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; sudo apt install clangd                              # Add C++ language server
+;; sudo pip3 install jedi-language-server "jedi<0.18.0" # Add python language server
+;; sudo pip3 install ffi-navigator                      # Add TVM-specific langage server
+
+;; For clangd support, add to config.cmake
+;; # Enable generation of compile_commands.json for clangd
+;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+;; # Also needed for cmake<3.18.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/16588)
+;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+;; Then, cd $TVM_HOME && ln -s build/compile_commands.json .
+
+(when (can-use 'lsp-mode)
+  (setq lsp-keymap-prefix "C-c C-d")
+  (require 'lsp-mode)
+
+  (setq lsp-headerline-breadcrumb-enable nil)
+  (setq lsp-eldoc-enable-hover nil)
+
+  (add-hook 'python-mode-hook 'lsp)
+  (add-hook 'c++-mode-hook 'lsp)
+
+  (when (can-use 'lsp-jedi)
+    (require 'lsp-jedi))
+
+  ;; TODO: Run the check for ffi-navigator asynchronously
+  (when (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil))
+    (lsp-register-client
+     (make-lsp-client
+      :new-connection (lsp-stdio-connection '("python3" "-m" "ffi_navigator.langserver"))
+      :major-modes '(python-mode c++-mode)
+      :server-id 'ffi-navigator
+      :add-on? t))
+    )
+  )
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;    end of human-written section     ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
