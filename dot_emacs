@@ -819,9 +819,14 @@ is binary, activate `hexl-mode'."
   (autoload 'rust-mode "rust-mode" "Rust editing mode." t)
   (add-to-list 'auto-mode-alist '("\\.rs$" . rust-mode)))
 
+(defun rust-compile-all ()
+  "Compile using `cargo build`"
+  (interactive)
+  (rust--compile "%s build --all-targets" rust-cargo-bin))
+
 (eval-after-load 'rust-mode
   `(progn
-     (define-key rust-mode-map (kbd "C-c C-c") 'rust-compile)
+     (define-key rust-mode-map (kbd "C-c C-c") 'rust-compile-all)
      (define-key rust-mode-map (kbd "C-c C-r") 'rust-run)
      (define-key rust-mode-map (kbd "C-c C-t") 'rust-test)
      (setq rust-format-on-save t)))
