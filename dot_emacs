@@ -247,6 +247,12 @@
 
 (global-set-key (kbd "C-x y") 'find-file-other-window)
 
+;; Quit having the custom-set-variables added to the bottom of my
+;; .emacs file.  They typically show up on a new installation, after
+;; calling package-install.
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file 'noerror)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      hexl customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -901,5 +907,3 @@ is binary, activate `hexl-mode'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    end of human-written section     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; TODO: Maybe use https://stackoverflow.com/a/5058752 to move
-;; customize's variables into a separate file that is ignored.
