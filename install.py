@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from glob import glob
+import inspect
 import io
 import os
 import pkgutil
@@ -98,6 +99,19 @@ def download_clangd():
     relpath = os.path.relpath(clangd_loc, os.path.dirname(clangd_symlink))
     os.symlink(relpath, clangd_symlink)
 
+def add_bash_common():
+    bashrc_path = os.path.expanduser('~/.bashrc')
+    current_bashrc = open(bashrc_path).read()
+    if '.bash_common' in current_bashrc:
+        print(".bashrc already calls .bash_common, skipping")
+    else:
+        print('Adding .bash_common to .bashrc')
+        bashrc = current_bashrc + inspect.cleandoc("""
+        if [ -f ~/.bash_common ]; then . ~/.bash_common; fi
+        """)
+        with open(bashrc_path,'w') as f:
+            f.write(bashrc)
+
 dot_emacs_path = '~' if system=='Linux' else path('~','AppData','Roaming')
 emacs_dir = path(dot_emacs_path,'.emacs.d')
 dot_emacs = path(dot_emacs_path,'.emacs')
@@ -111,6 +125,7 @@ if system=='Linux':
     link('dot_Xdefaults','~/.Xdefaults')
     link('dot_Xdefaults','~/.Xresources')
     link_all_ipython()
+    add_bash_common()
     download_clangd()
 
 link('pylib','~/pylib')
