@@ -247,6 +247,12 @@
 
 (global-set-key (kbd "C-x y") 'find-file-other-window)
 
+;; Quit having the custom-set-variables added to the bottom of my
+;; .emacs file.  They typically show up on a new installation, after
+;; calling package-install.
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file 'noerror)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      hexl customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -461,23 +467,42 @@ is binary, activate `hexl-mode'."
      (define-key makefile-mode-map (kbd "C-c c") 'find-makefile-compile)
      (define-key makefile-mode-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;        LSP customizations          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Overall config defined here, then language-specific modes defined
+;; in language-specific sections.
+(when (and (can-use 'lsp-mode)
+           (can-use 'lsp-ui))
+  (setq lsp-keymap-prefix "C-c C-d")
+  (require 'lsp-mode)
+
+  (setq lsp-headerline-breadcrumb-enable nil)
+  (setq lsp-eldoc-enable-hover nil)
+  (setq lsp-signature-render-documentation nil)
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;(when (can-use 'helm)
 
-;; (when (and (can-use 'async)
-;;            (can-use 'popup))
-;;   (add-to-list 'load-path "~/.emacs.d/helm")
+;; Per project, either add these commands to CMakeLists.txt, or
+;; compile with `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..`
 
+;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+;; # Also needed for cmake<3.18.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/16588)
+;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
-;;   (setq helm-gtags-prefix-key "M-`")
-;;   (require 'helm)
-;;   (require 'helm-command)
-;;   (global-set-key (kbd "M-x") 'helm-M-x)
-;;   (helm-mode)
-;;   )
+;; Ubuntu 20.04's apt has clangd 10.0, which doesn't look in build
+;; subdir for compile_commands.json.  Can symlink to
+;; build/compile_commands.json, but I'm lazy so I download clangd 13.0
+;; in the settings/install.py
+
+(when (can-use 'lsp-mode)
+  (add-hook 'c-mode-common-hook 'lsp))
 
 (if (can-use 'cuda-mode)
     (progn (add-to-list 'auto-mode-alist '("\\.cu$" . cuda-mode))
@@ -489,11 +514,12 @@ is binary, activate `hexl-mode'."
 (global-set-key (kbd "C-c C-g") 'gud-gdb)
 
 
-(add-hook 'c-initialization-hook '(lambda ()
-				    (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
-                                    (define-key c-mode-base-map (kbd "C-j") 'newline-and-indent)
-                                    (define-key c-mode-base-map (kbd "C-c c") 'find-makefile-compile)
-                                    (define-key c-mode-base-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
+(add-hook 'c-initialization-hook
+          '(lambda ()
+	     (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
+             (define-key c-mode-base-map (kbd "C-j") 'newline-and-indent)
+             (define-key c-mode-base-map (kbd "C-c c") 'find-makefile-compile)
+             (define-key c-mode-base-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
 
 (setq-default ff-always-in-other-window nil)
 (add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
@@ -541,39 +567,10 @@ is binary, activate `hexl-mode'."
 (when (can-use 'clang-format+)
   (add-hook 'c-mode-common-hook #'clang-format+-mode))
 
-;; ;;Use Astyle
-;; (defvar astyle-options '() "Options to be passed to astyle")
-;; (add-to-list 'astyle-options "--style=java")
-;; (add-to-list 'astyle-options "--indent=spaces=2")
-;; (add-to-list 'astyle-options "--add-brackets")
-;; (add-to-list 'astyle-options "--add-one-line-brackets")
-;; (add-to-list 'astyle-options "--lineend=linux")
-;; (add-to-list 'astyle-options "--pad-header")
-;; (add-to-list 'astyle-options "--unpad-paren")
 
-;; (autoload 'apply-rcs-patch "~/.emacs.d/misc/rcs-patch.el")
-;; (defun save-buffer-astyle ()
-;;   (interactive)
-;;   (save-buffer)
-;;   (save-window-excursion
-;;     (let ((astyle-option-string (mapconcat 'identity astyle-options " ") ))
-;;       (shell-command-on-region (point-min) (point-max)
-;;                                (format "astyle %s | diff %s - --rcs" astyle-option-string (buffer-file-name))
-;;                                (get-buffer-create "*Astyle Diff*") nil
-;;                                (get-buffer-create "*Astyle Errors*") t))
-;;     (apply-rcs-patch (get-buffer-create "*Astyle Diff*")))
-;;   (save-buffer))
-
-;; (defun load-save-buffer-astyle ()
-;;   (interactive)
-;;   (local-set-key [remap save-buffer] 'save-buffer-astyle)
-;;   (message "Loaded astyle"))
-
-;; (add-hook 'c-initialization-hook '(lambda ()
-;;                                     (define-key c-mode-base-map (kbd "C-x M-s") 'load-save-buffer-astyle)))
-
-
-;; For additional places where auto-newlines can be added, look in the help for the variable "c-offsets-alist"
+;; My preferred C/C++ indentation style.  Files will be overwritten on
+;; save by any project-specific clang-format configs, but gets
+;; somewhere reasonable while editing, or for new projects.
 (defconst my-c-style
   '((c-electric-pound-behavior . 'alignleft)
 
@@ -715,6 +712,16 @@ is binary, activate `hexl-mode'."
 (when (can-use 'blacken)
   (add-hook 'python-mode-hook '(lambda () (blacken-mode))))
 
+;; Add python language server.  Version of jedi is to maintain
+;; compatibility with IPython 7.13 (ubuntu 20.04's apt version).
+;; Latest PyPI version of ipython is compability with latest jedi.
+
+;; sudo pip3 install jedi-language-server "jedi<0.18.0"
+(when (can-use 'lsp-mode)
+  (add-hook 'python-mode-hook 'lsp)
+  (when (can-use 'lsp-jedi)
+    (require 'lsp-jedi)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -831,26 +838,41 @@ is binary, activate `hexl-mode'."
      (define-key rust-mode-map (kbd "C-c C-t") 'rust-test)
      (setq rust-format-on-save t)))
 
-;; Setup for jump to definition and autocomplete.  Needs installation
-;; of racer and rust source to work.
-;; $ cargo +nightly install racer
-;; $ rustup add component rust-src
-(when (can-use 'racer)
-  (eval-after-load 'rust-mode
-    `(progn
-       ;; Use newer path for rust source.  Needed as of 2021-02-28.
-       ;; Should test if this can be removed in the future.
-       (setq racer-rust-src-path
-             (concat (string-trim (shell-command-to-string "rustc --print sysroot"))
-                     "/lib/rustlib/src/rust/library"))
-       (add-hook 'rust-mode-hook #'racer-mode)
-       (add-hook 'racer-mode-hook #'eldoc-mode)))
-  (when (can-use 'company)
-    (eval-after-load 'rust-mode
-      `(progn
-         (add-hook 'racer-mode-hook #'company-mode)
-         (define-key rust-mode-map (kbd "TAB") #'company-indent-or-complete-common)
-         (setq company-tooltip-align-annotations t)))))
+
+
+(when (can-use 'lsp-mode)
+  (setq lsp-rust-server 'rust-analyzer)
+  (setq lsp-rust-analyzer-server-command '("rustup" "run" "nightly" "rust-analyzer"))
+  ;; Line is necessary with current version of lsp-rust.
+  ;; https://github.com/emacs-lsp/lsp-mode/pull/2853
+  (setq lsp-rust-analyzer-server-args lsp-rust-analyzer-server-command)
+
+  (add-hook 'rust-mode-hook 'lsp)
+  )
+
+;; ;; Setup for jump to definition and autocomplete.  Needs installation
+;; ;; of racer and rust source to work.
+;; ;; $ cargo +nightly install racer
+;; ;; $ rustup add component rust-src
+;; (when (can-use 'racer)
+;;   (eval-after-load 'rust-mode
+;;     `(progn
+;;        ;; Use newer path for rust source.  Needed as of 2021-02-28.
+;;        ;; Should test if this can be removed in the future.
+;;        (setq racer-rust-src-path
+;;              (concat (string-trim
+;;                       (shell-command-to-string "rustc --print sysroot"))
+;;                      "/lib/rustlib/src/rust/library"))
+;;        (add-hook 'rust-mode-hook #'racer-mode)
+;;        (add-hook 'racer-mode-hook #'eldoc-mode))))
+
+;; (when (can-use 'company)
+;;     (eval-after-load 'rust-mode
+;;       `(progn
+;;          (add-hook 'racer-mode-hook #'company-mode)
+;;          (define-key rust-mode-map (kbd "TAB")
+;;            #'company-indent-or-complete-common)
+;;          (setq company-tooltip-align-annotations t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     screeps customizations          ;;;
@@ -865,30 +887,11 @@ is binary, activate `hexl-mode'."
 ;;;         tvm customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; sudo apt install clangd                              # Add C++ language server
-;; sudo pip3 install jedi-language-server "jedi<0.18.0" # Add python language server
-;; sudo pip3 install ffi-navigator                      # Add TVM-specific langage server
 
-;; For clangd support, add to config.cmake
-;; # Enable generation of compile_commands.json for clangd
-;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-;; # Also needed for cmake<3.18.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/16588)
-;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
-;; Then, cd $TVM_HOME && ln -s build/compile_commands.json .
+;; Add TVM-specific langage server
+;; sudo pip3 install ffi-navigator
 
 (when (can-use 'lsp-mode)
-  (setq lsp-keymap-prefix "C-c C-d")
-  (require 'lsp-mode)
-
-  (setq lsp-headerline-breadcrumb-enable nil)
-  (setq lsp-eldoc-enable-hover nil)
-
-  (add-hook 'python-mode-hook 'lsp)
-  (add-hook 'c++-mode-hook 'lsp)
-
-  (when (can-use 'lsp-jedi)
-    (require 'lsp-jedi))
-
   ;; TODO: Run the check for ffi-navigator asynchronously
   (when (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil))
     (lsp-register-client
@@ -904,5 +907,3 @@ is binary, activate `hexl-mode'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    end of human-written section     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; TODO: Maybe use https://stackoverflow.com/a/5058752 to move
-;; customize's variables into a separate file that is ignored.
