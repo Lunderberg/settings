@@ -1,0 +1,32 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: bench
+# key: bench
+# group: debug
+# --
+// -- Cargo.toml --
+// [[bench]]
+// name = "benchmarks"
+// harness = false
+//
+// [dev-dependencies]
+// criterion = {version = "0.3", features=['html_reports']}
+
+use criterion::{
+    black_box, criterion_group, criterion_main, Bencher, Criterion,
+};
+
+
+fn benchmark_name(b: &mut Bencher) {
+    // Setup code goes here
+
+    b.iter(|| {
+        // Test code goes here
+    });
+}
+
+fn bench_criterion_group(c: &mut Criterion) {
+    c.bench_function("benchmark_name", benchmark_name);
+}
+
+criterion_group!(benches, bench_flat_image);
+criterion_main!(benches);
