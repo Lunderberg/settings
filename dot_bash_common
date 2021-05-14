@@ -5,7 +5,7 @@ DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
 export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
 export XENVIRONMENT=~/.Xresources
 
-if ls /opt | grep emacs; then
+if ls /opt | grep emacs > /dev/null; then
    export PATH=$PATH:$(ls -d /opt/emacs-*/bin)
 fi
 
