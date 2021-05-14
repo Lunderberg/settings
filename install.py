@@ -15,19 +15,21 @@ import zipfile
 fold = os.path.abspath(os.path.dirname(sys.argv[0]))
 system = platform.system()
 
-def path(*args):
-    return os.path.expanduser(os.path.expandvars(
-            os.path.join(*args)))
 
-#Because windows is absurd and has no easy way to make symlinks.
-#This also requires the script to be run as admin, since symlinks are restricted to admins
-#How was that ever a good idea?
+def path(*args):
+    return os.path.expanduser(os.path.expandvars(os.path.join(*args)))
+
+
+# Because windows is absurd and has no easy way to make symlinks.
+# This also requires the script to be run as admin, since symlinks are restricted to admins
+# How was that ever a good idea?
 def symlink(source, link_name):
     os_symlink = getattr(os, "symlink", None)
     if callable(os_symlink):
         os_symlink(source, link_name)
     else:
         import ctypes
+
         csl = ctypes.windll.kernel32.CreateSymbolicLinkW
         csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
         csl.restype = ctypes.c_ubyte
@@ -35,33 +37,37 @@ def symlink(source, link_name):
         if csl(link_name, source, flags) == 0:
             raise ctypes.WinError()
 
-def link(source,dest):
-    source = os.path.join(fold,source)
+
+def link(source, dest):
+    source = os.path.join(fold, source)
     dest = path(dest)
     if os.path.exists(dest):
         print("{0} exists, not overwriting".format(dest))
     else:
         if os.path.lexists(dest):
             os.remove(dest)
-        symlink(source,dest)
-        print("{0} linked to {1}".format(dest,source))
+        symlink(source, dest)
+        print("{0} linked to {1}".format(dest, source))
+
 
 def link_all_ipython():
-    ipython_dir = path('~','.ipython','profile_default','startup')
+    ipython_dir = path("~", ".ipython", "profile_default", "startup")
     if not os.path.exists(ipython_dir):
         os.makedirs(ipython_dir)
 
-    for startup_file in glob(os.path.join('ipython_startup','*.py')):
+    for startup_file in glob(os.path.join("ipython_startup", "*.py")):
         script_name = os.path.basename(startup_file)
         link(startup_file, os.path.join(ipython_dir, script_name))
 
 
-git_bin = 'git' if system=='Linux' else 'c:/Program Files (x86)/Git/bin/git.exe'
-def clone_git(url,outputDir):
-    name = url[url.rfind('/')+1:url.rfind('.')]
-    outputDir = os.path.join(path(outputDir),name)
+git_bin = "git" if system == "Linux" else "c:/Program Files (x86)/Git/bin/git.exe"
+
+
+def clone_git(url, outputDir):
+    name = url[url.rfind("/") + 1 : url.rfind(".")]
+    outputDir = os.path.join(path(outputDir), name)
     if os.path.exists(outputDir):
-        print('{} exists, skipping'.format(outputDir))
+        print("{} exists, skipping".format(outputDir))
         return
     subprocess.call([git_bin, "clone", "--recursive", url, outputDir])
     print("Installed {}".format(outputDir))
@@ -78,26 +84,32 @@ installed_pypackages = [name for _, name, _ in pkgutil.iter_modules()]
 
 
 def installPyPackage(tarball):
-    tarpath,filename = os.path.split(tarball)
+    tarpath, filename = os.path.split(tarball)
     for name in installed_pypackages:
         if name in filename:
-            print('{} installed already, skipping'.format(name))
+            print("{} installed already, skipping".format(name))
             return
-    tar = tarfile.open(tarball,'r:gz')
-    instpath = path(tarpath,tar.firstmember.name)
+    tar = tarfile.open(tarball, "r:gz")
+    instpath = path(tarpath, tar.firstmember.name)
     tar.extractall(tarpath)
-    subprocess.call(['python','setup.py','install','--user'],
-                    cwd=instpath,stdout=open(os.devnull,'wb'))
+    subprocess.call(
+        ["python", "setup.py", "install", "--user"],
+        cwd=instpath,
+        stdout=open(os.devnull, "wb"),
+    )
     shutil.rmtree(instpath)
-    print('Installed {0}'.format(instpath))
+    print("Installed {0}".format(instpath))
+
 
 def download_clangd():
-    clangd_symlink = os.path.join(os.path.dirname(__file__), 'bin', 'clangd')
-    clangd_loc = os.path.join(os.path.dirname(__file__), 'bin', 'clangd_12.0.0', 'bin', 'clangd')
+    clangd_symlink = os.path.join(os.path.dirname(__file__), "bin", "clangd")
+    clangd_loc = os.path.join(
+        os.path.dirname(__file__), "bin", "clangd_12.0.0", "bin", "clangd"
+    )
     if os.path.exists(clangd_symlink):
         return
 
-    url = 'https://github.com/clangd/clangd/releases/download/12.0.0/clangd-linux-12.0.0.zip'
+    url = "https://github.com/clangd/clangd/releases/download/12.0.0/clangd-linux-12.0.0.zip"
     response = urllib.request.urlopen(url)
     contents = io.BytesIO(response.read())
     zipped = zipfile.ZipFile(contents)
@@ -127,9 +139,9 @@ if system == "Linux":
     link_all_ipython()
     download_clangd()
 
-link('pylib','~/pylib')
-link('dot_emacs',dot_emacs)
-link('dot_emacs.d',emacs_dir)
+link("pylib", "~/pylib")
+link("dot_emacs", dot_emacs)
+link("dot_emacs.d", emacs_dir)
 
 # Not needed so much now that the lab has pip installed.
 # for tarball in sorted(glob(path('pypackages','*.tar.gz'))+
