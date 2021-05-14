@@ -63,10 +63,20 @@ def clone_git(url,outputDir):
     if os.path.exists(outputDir):
         print('{} exists, skipping'.format(outputDir))
         return
-    subprocess.call([git_bin,'clone','--recursive',url,outputDir])
-    print('Installed {}'.format(outputDir))
+    subprocess.call([git_bin, "clone", "--recursive", url, outputDir])
+    print("Installed {}".format(outputDir))
 
-installed_pypackages = [name for _,name,_ in pkgutil.iter_modules()]
+
+def git_submodule_update():
+    subprocess.call(
+        [git_bin, "submodule", "update", "--init", "--recursive"],
+        cwd=os.path.dirname(__file__),
+    )
+
+
+installed_pypackages = [name for _, name, _ in pkgutil.iter_modules()]
+
+
 def installPyPackage(tarball):
     tarpath,filename = os.path.split(tarball)
     for name in installed_pypackages:
@@ -98,18 +108,22 @@ def download_clangd():
     relpath = os.path.relpath(clangd_loc, os.path.dirname(clangd_symlink))
     os.symlink(relpath, clangd_symlink)
 
-dot_emacs_path = '~' if system=='Linux' else path('~','AppData','Roaming')
-emacs_dir = path(dot_emacs_path,'.emacs.d')
-dot_emacs = path(dot_emacs_path,'.emacs')
 
-if system=='Linux':
-    link('dot_bash_common','~/.bash_common')
-    link('dot_screenrc','~/.screenrc')
-    link('dot_dir_colors','~/.dir_colors')
-    link('dot_tmux.conf','~/.tmux.conf')
-    link('dot_gitconfig','~/.gitconfig')
-    link('dot_Xdefaults','~/.Xdefaults')
-    link('dot_Xdefaults','~/.Xresources')
+dot_emacs_path = "~" if system == "Linux" else path("~", "AppData", "Roaming")
+emacs_dir = path(dot_emacs_path, ".emacs.d")
+dot_emacs = path(dot_emacs_path, ".emacs")
+
+git_submodule_update()
+
+if system == "Linux":
+    link("dot_bash_common", "~/.bash_common")
+    link("dot_screenrc", "~/.screenrc")
+    link("dot_dir_colors", "~/.dir_colors")
+    link("dot_tmux.conf", "~/.tmux.conf")
+    link("dot_gitconfig", "~/.gitconfig")
+    link("dot_Xdefaults", "~/.Xdefaults")
+    link("dot_Xdefaults", "~/.Xresources")
+    link("dot_gdbinit", "~/.gdbinit")
     link_all_ipython()
     download_clangd()
 

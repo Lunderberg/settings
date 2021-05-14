@@ -387,6 +387,8 @@ is binary, activate `hexl-mode'."
 (set-face-background 'org-agenda-clocking "black")
 (set-face-foreground 'org-agenda-clocking "deep sky blue")
 (add-to-list 'warning-suppress-types '(undo discard-info))
+(setq org-todo-keywords
+      '((sequence "TODO" "WAITING" "|" "DONE" "CANCELLED")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     yasnippet customizations    ;;;
@@ -713,7 +715,7 @@ is binary, activate `hexl-mode'."
    (electric-indent-local-mode -1)))
 
 (when (can-use 'blacken)
-  (add-hook 'python-mode-hook '(lambda () (blacken-mode))))
+  (add-hook 'python-mode-hook #'blacken-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;

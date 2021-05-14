@@ -1,0 +1,3 @@
+[submodule "tvm-gdb-extension"]
+	path = tvm-gdb-extension
+	url = https://github.com/Lunderberg/tvm-gdb-extension
