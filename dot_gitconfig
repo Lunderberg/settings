@@ -10,3 +10,5 @@
 # Currently used for work name/email on work account.
 [include]
         path = ~/.gitconfig_local
+[submodule]
+	recurse = true
