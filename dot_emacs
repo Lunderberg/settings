@@ -114,10 +114,6 @@
 (global-set-key [remap electric-newline-and-maybe-indent]
                 'newline-and-indent)
 
-
-(require 'dired-x) ; Enables C-x C-j to jump to the current file in dired.
-(global-set-key (kbd "C-x F") 'find-name-dired) ; Find all files matching name.
-
 ;;M-<up> and M-<down> to scroll up/down by one line.
 (global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-down 1)))
 (global-set-key (kbd "<M-down>") (lambda () (interactive) (scroll-up 1)))
@@ -381,6 +377,20 @@ is binary, activate `hexl-mode'."
 (defun ibuffer-keys ()
   (local-set-key (kbd "<down-mouse-1>") 'ibuffer-visit-buffer-other-window))
 (add-hook 'ibuffer-hook 'ibuffer-keys)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;       dired customizations         ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+; Enables C-x C-j to jump to the current file in dired.
+(require 'dired-x)
+
+; Find all files matching name.
+(global-set-key (kbd "C-x F") 'find-name-dired)
+
+; Hide dotfiles
+(add-hook 'dired-mode-hook 'dired-omit-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     org-mode customizations        ;;;
