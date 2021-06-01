@@ -83,6 +83,9 @@ alias psgrep='ps aux | grep'
 
 alias cd..="cd .."
 
+# Extract symbols from .so file
+alias symbols="nm -gDC"
+
 function addpath() {
     if [ $# -ge 1 ]; then
         export PATH=$1:$PATH

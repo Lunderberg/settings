@@ -58,7 +58,8 @@
       (set-face-attribute 'default nil :height
 			  (cond ((= (x-display-pixel-height) 1050) 120)
 				((= (x-display-pixel-height) 1080) 120)
-				((= (x-display-pixel-height) 768) 100)))))
+				((= (x-display-pixel-height) 768) 100)
+                                ('t 120)))))
 (global-set-key (kbd "C-x g") 'adjust-font-size)
 (adjust-font-size)
 
@@ -130,6 +131,10 @@
 ;;   (require 'keyfreq)
 ;;   (keyfreq-mode 1)
 ;;   (keyfreq-autosave-mode 1))
+
+(when (can-use 'xclip)
+  (xclip-mode)
+  )
 
 (defun save-in-other-file (new-filename)
   (interactive "FFilename:")
