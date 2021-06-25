@@ -84,7 +84,8 @@ alias psgrep='ps aux | grep'
 alias cd..="cd .."
 
 # Extract symbols from .so file
-alias symbols="nm -gDC"
+alias symbols="nm --demangle --extern-only --dynamic"
+alias undefined_symbols="ldd --function-relocs"
 
 function addpath() {
     if [ $# -ge 1 ]; then
