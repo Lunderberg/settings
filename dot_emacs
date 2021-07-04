@@ -642,11 +642,6 @@ is binary, activate `hexl-mode'."
 
 (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   CMake customizations             ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(can-use 'cmake-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   PHP/Web customizations           ;;;
@@ -892,6 +887,13 @@ is binary, activate `hexl-mode'."
 ;;          (define-key rust-mode-map (kbd "TAB")
 ;;            #'company-indent-or-complete-common)
 ;;          (setq company-tooltip-align-annotations t))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      Misc Language Installs         ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(mapcar 'can-use '(groovy-mode cmake-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     screeps customizations          ;;;
