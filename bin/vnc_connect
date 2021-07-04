@@ -1,0 +1,208 @@
+#!/bin/bash
+
+set -euo pipefail
+
+host=
+use_sudo=false
+local_port=5900
+remote_port=localhost:5900
+vnc_client="vinagre --vnc-scale"
+remote_command=
+
+function show_usage() {
+    cat <<EOF
+Usage: vnc_connect
+           [-s|--sudo]
+           [--local-port LOCAL_PORT] [--remote-port REMOTE_PORT]
+           [--vnc-client VNC_CLIENT] [--remote-command REMOTE_COMMAND]
+           [-h|--help] HOST
+
+Starts a VNC server on the specified HOST, then immediately
+connects to it through an SSH tunnel.  HOST should be
+accessible through ssh from the local computer.
+
+-h, --help
+
+    Display this help message.
+
+-s, --sudo
+
+    Opens the VNC server with sudo privilegs, using the auth
+    file /var/lib/lightdm/.Xauthority.  This may be necessary
+    if no user has logged on to the desktop environment.  If
+    --remote-command is specified, --sudo has no effect.
+
+--no-sudo
+
+    Disables a previous usage of --sudo.
+
+--local-port LOCAL_PORT
+
+    Bind the local port of the SSH tunnel to LOCAL_PORT.
+    Defaults to 5900.
+
+--remote-port REMOTE_PORT
+
+    Bind the remote port of the SSH tunnel to REMOTE_PORT.
+    Defaults to "localhost:5900".
+
+--vnc-client VNC_CLIENT
+
+    Local command to connect to the VNC server.
+    Defaults to "vinagre --vnc-scale".
+
+--remote-command REMOTE_COMMAND
+
+    The command to be run on the remote server to start the
+    VNC server.  Defaults to "x11vnc -display :0", or "x11vnc
+    -display :0 -auth /var/lib/lightdm/.Xauthority" if --sudo
+    is passed.
+
+EOF
+}
+
+for arg; do
+    echo $arg
+done
+trap "show_usage >&2" ERR
+args=$(getopt \
+           --name vnc_connect \
+           --longoptions "sudo,no-sudo" \
+           --longoptions "local-port:,remote-port:" \
+           --longoptions "vnc-client:,remote-command:" \
+           --options "sh" \
+           --unquoted \
+           -- "$@")
+echo args = $args
+trap - ERR
+set -- $args
+
+for arg; do
+    echo $arg
+done
+
+
+while (( $# )); do
+    case "$1" in
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+
+        -s|--sudo)
+            use_sudo=true
+            shift
+            ;;
+
+        --no-sudo)
+            use_sudo=false
+            shift
+            ;;
+
+        --local-port)
+            local_port=$2
+            shift
+            shift
+            ;;
+
+        --remote-port)
+            remote_port=$2
+            shift
+            shift
+            ;;
+
+        --vnc-client)
+            vnc_client=$2
+            shift
+            shift
+            ;;
+
+        --remote-command)
+            remote_command=$2
+            shift
+            shift
+            ;;
+
+        --)
+            shift
+            break
+            ;;
+
+        -*|--*)
+            echo "Error: Unknown flag: $1"
+            show_usage >&2
+            exit 1
+            ;;
+
+        *)
+            echo "Internal Error: getopt should output -- before positional" >&2
+            exit 2
+            ;;
+    esac
+done
+
+if [ $# -ge 1 ]; then
+    host=$1
+    shift
+else
+    echo "Error: Missing positional argument HOST" >&2
+    show_usage >&2
+    exit 1
+fi
+
+if [ $# -ge 1 ]; then
+    echo "Error: Extra positional argument $1" >&2
+    show_usage >&2
+    exit 1
+fi
+
+
+if [ -z "${remote_command}" ]; then
+    remote_command="x11vnc -display :0"
+    if ${use_sudo}; then
+        remote_command="sudo ${remote_command} -auth /var/lib/lightdm/.Xauthority"
+    fi
+fi
+
+# Cleanup to be performed on script exit.
+function cleanup() {
+    kill $(jobs -p) 2> /dev/null || true
+
+    if [ -n ${temp_dir} ]; then
+        rm -rf ${temp_dir}
+    fi
+}
+trap cleanup EXIT
+
+# Temp dir with a fifo
+temp_dir=$(mktemp -d -t vnc_connect.XXXXXXXXXX) || exit 1
+ssh_fifo=${temp_dir}/ssh_output
+mkfifo ${ssh_fifo}
+
+# Start the ssh tunnel
+echo host = ${host}
+ssh -tt -L ${local_port}:${remote_port} ${host} "${remote_command}" | tee ${ssh_fifo} &
+ssh_tunnel=$!
+
+# Wait for the VNC server to be ready
+while read LINE; do
+    if [[ "${LINE}" = *"The VNC desktop is"* ]]; then
+        break
+    fi
+done < ${ssh_fifo}
+
+# Check if the loop exited because the server exited, or because the ssh tunnel is running
+if ! kill -0 ${ssh_tunnel} 2> /dev/null; then
+    echo "Couldn't start ssh tunnel"
+    exit 1
+fi
+
+# Make sure the fifo doesn't block, now that we're done with it
+cat ${ssh_fifo} > /dev/null &
+
+# Start the client
+${vnc_client} localhost:${local_port} &
+
+# Close the script when either the server or the client close.
+# cleanup() will kill whichever one remains.
+wait -n
