@@ -9,3 +9,4 @@ dot_emacs.d/elpa
 bin/clangd
 bin/clangd_12.0.0
 .lsp-session-v1
+custom.el
