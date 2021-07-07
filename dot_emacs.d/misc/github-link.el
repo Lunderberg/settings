@@ -32,7 +32,7 @@
   :type 'list
   :group 'github-link)
 
-(defcustom github-link-context-lines 0
+(defcustom github-link-context-lines 3
   "Number of lines of context used when checking a diff.  This is
    used when checking if a link can be made to upstream/main
    instead of the current branch.  The linked region must be at
@@ -41,13 +41,15 @@
   :type 'int
   :group 'github-link)
 
-(defun github-link-call-git (&rest args)
+(defun github-link--call-git (&rest args)
+  "Helper to call the git executable.  All function arguments are
+   passed to git."
   (with-output-to-string
     (with-current-buffer standard-output
       (apply 'call-process "git" nil t nil args))))
 
 
-(defclass github-link-git-branch ()
+(defclass github-link--git-branch ()
   ((name
     :initarg :name
     :initform ""
@@ -73,11 +75,11 @@
     :initform nil
     :type string-or-null
     :documentation "The name of the tracking branch in the remote, if any.")
-   (remote-username
-    :initarg :remote-username
+   (remote-user-name
+    :initarg :remote-user-name
     :initform nil
     :type string-or-null
-    :documentation "The Github username that ownes the repo that contains the remote tracking branch, if any.")
+    :documentation "The Github user-name that ownes the repo that contains the remote tracking branch, if any.")
    (remote-repo-name
     :initarg :remote-repo-name
     :initform nil
@@ -89,16 +91,36 @@
     :type boolean
     :documentation "If the branch specified is the currently active branch.")
    )
-  :group github-link)
+  :group github-link
 
-(cl-defmethod priority ((branch github-link-git-branch))
-  (let* ((name (oref branch name))
-         (split-name (split-string name "/"))
-         (remote-name (nth 0 split-name))
-         (remote-branch (nth 1 split-name))
-         (remote-name-index (cl-position remote-name github-link-remotes :test 'equal))
-         (remote-branch-index (cl-position remote-branch github-link-branches :test 'equal))
-         )
+  :documentation "Represents a git branch, and associated information about it.
+   Constructed based on the git repository that is tracking the
+   current buffer."
+  )
+
+(cl-defmethod github-link--branch-order ((branch github-link--git-branch))
+  "The order in which branches should be checked to generate a
+  hyperlink.  By default, the main and master branches on the
+  upstream and origin remotes have first priority, followed by
+  the currently active branch.  These defaults can be adjusted
+  using the `github-link-remotes' and `github-link-branches'
+  variables.  If the selected region has no diffs from that
+  target branch, then a hyperlink can be generated.  Otherwise,
+  `github-link' continues in the order specified by this
+  function.
+
+  If this method returns nil, the branch does not participate in
+  generating a hyperlink.  This typically means that the branch
+  is not one of the standard branches to
+  check (e.g. origin/main), or it is the active branch, but is
+  not tracking a remote branch."
+
+  (let ((remote-name-index
+         (cl-position (oref branch remote-name)
+                      github-link-remotes :test 'equal))
+        (remote-branch-index
+         (cl-position (oref branch remote-branch)
+                      github-link-branches :test 'equal)))
 
     (cond
      ;; Remote branches come first, in order of github-link-remotes,
@@ -153,8 +175,21 @@
         ))))
 
 
-(cl-defmethod corresponding-region ((branch github-link-git-branch)
-                                    filename lines)
+(cl-defmethod github-link--line-numbers-on-branch
+  ((branch github-link--git-branch) filename lines)
+  "For a given FILENAME and LINE numbers, returns the line
+   numbers for that region on the branch.  LINES should be a list
+   of integers of length 2, given the first and last line of the
+   region.  The return is a list of integers of length 2, giving
+   the line numbers (first and last) of that region in the branch
+   specified.
+
+   If the branch differs from the working version in the region
+   selected, this function will return nil.  This indicates that
+   there is no such corresponding region.  This includes a check
+   of the `github-link-context-lines' number of lines surrounding
+   the region.  This value is interpreted as the --unified
+   argument passed to git-diff."
 
   (defun chunk-overlaps-region (chunk)
     (let ((selection-first (nth 0 lines))
@@ -166,10 +201,10 @@
            (<= head-first selection-last))
     ))
 
-  (let* ((diff-text (github-link-call-git
+  (let* ((diff-text (github-link--call-git
                      "diff"
                      (format "--unified=%d" github-link-context-lines)
-                     (oref branch name)
+                     (oref branch remote-full)
                      filename))
          (diff-chunks (all-diff-chunk-headers diff-text))
          (has-diff-in-selection (cl-some 'chunk-overlaps-region diff-chunks))
@@ -196,19 +231,24 @@
     (unless has-diff-in-selection offset-selection)
     ))
 
-(cl-defmethod make-github-link ((branch github-link-git-branch)
-                                filename lines)
-  (let ((branch-region (corresponding-region branch filename lines)))
-    (if branch-region
-        (let* ((first-line (nth 0 branch-region))
-               (last-line (nth 1 branch-region))
+(cl-defmethod github-link--make-link
+  ((branch github-link--git-branch) filename lines)
+  "Make a hyperlink to the specified region of a file on this
+   branch.  If the working directory has diffs in this region,
+   relative to branch, then this function will return nil."
+
+  (let ((branch-lines
+         (github-link--line-numbers-on-branch branch filename lines)))
+    (if branch-lines
+        (let* ((first-line (nth 0 branch-lines))
+               (last-line (nth 1 branch-lines))
                (line-argument (if (= first-line last-line)
                                   (format "L%d" first-line)
                                 (format "L%d-L%d" first-line last-line)))
-               (rel-path (string-trim (github-link-call-git "ls-files" filename)))
+               (rel-path (string-trim (github-link--call-git "ls-files" filename)))
                (url (string-join
                      (list "https://github.com"
-                           (oref branch remote-username) (oref branch remote-repo-name)
+                           (oref branch remote-user-name) (oref branch remote-repo-name)
                            "blob" (oref branch remote-branch)
                            rel-path
                            )
@@ -216,8 +256,14 @@
                (full-url (concat url "#" line-argument)))
           full-url))))
 
-(defun github-link-get-remote-name (remote-name)
-  (let ((remote-url (github-link-call-git "remote" "get-url" remote-name))
+(defun github-link--get-remote-info (remote-name)
+  "Given the name of a git remote that points to a github repo,
+   returns a plist with information about that repo.  The plist
+   has keys 'user-name and 'repo-name for the github user who
+   owns that remote, and the name of the github repo,
+   respectively."
+
+  (let ((remote-url (github-link--call-git "remote" "get-url" remote-name))
         (regex (concat "\\(https?://github.com/\\|git@github.com:\\)"
                        "\\([A-Za-z0-9_-]+\\)"
                        "/"
@@ -225,11 +271,15 @@
                        "\\(\\.git\\)?"
                        )))
     (if (string-match regex remote-url)
-        (list (match-string 2 remote-url) (match-string 3 remote-url))
+        (list 'user-name (match-string 2 remote-url)
+              'repo-name (match-string 3 remote-url))
         )))
 
 
-(defun github-link-get-branches ()
+(defun github-link--get-branches ()
+  "Returns a list of `github-link--git-branch' objects
+   representing the branches of the current git repository."
+
   (defun parse-line (line)
     (let* ((line (split-string line "\037"))
            (name (pop line))
@@ -242,19 +292,19 @@
             (if remote-full (split-string remote-full "/")))
            (remote-name (nth 0 remote-slash-branch))
            (remote-branch (nth 1 remote-slash-branch))
-           (remote-username-name (if remote-name (github-link-get-remote-name remote-name)))
-           (remote-username (nth 0 remote-username-name))
-           (remote-repo-name (nth 1 remote-username-name))
+           (github-info (if remote-name (github-link--get-remote-info remote-name)))
+           (remote-user-name (plist-get github-info 'user-name))
+           (remote-repo-name (plist-get github-info 'repo-name))
 
            (is-active (string= (pop line) "*")))
 
-      (github-link-git-branch
+      (github-link--git-branch
        :name name
        :commit commit
        :remote-full remote-full
        :remote-name remote-name
        :remote-branch remote-branch
-       :remote-username remote-username
+       :remote-user-name remote-user-name
        :remote-repo-name remote-repo-name
        :is-active is-active)))
 
@@ -263,34 +313,56 @@
                                 "%(upstream:short)"
                                 "%(HEAD)")
                               "\037"))
-         (branch-output (github-link-call-git "branch" "--all"
-                                              "--format" format))
+         (branch-output (github-link--call-git "branch" "--all"
+                                               "--format" format))
          (lines (split-string branch-output "\n" t)))
     (mapcar 'parse-line lines)))
 
 
-(defun filter-sort (seq key)
-  (let* ((decorated (mapcar (lambda (item) (list (funcall key item) item)) seq))
+(defun github-link--filter-sort (seq key &optional predicate)
+  "Utility function to filter and sort a list based on a key
+   function.  The key function is applied to all items in the
+   list.  If the key function returns nil for an item, that item
+   is removed from the output.  The return values of the key
+   function are then used to sort the list.  If given, the
+   PREDICATE argument specifies the comparison function used.  If
+   not specified, '< is used as the predicate."
+
+  (let* ((predicate (or predicate '<))
+         (decorated (mapcar (lambda (item) (list (funcall key item) item)) seq))
          (filtered (seq-filter 'car decorated))
-         (sorted (cl-sort filtered '< :key 'car))
+         (sorted (cl-sort filtered predicate :key 'car))
          (undecorated (mapcar (lambda (d) (nth 1 d)) sorted)))
     undecorated))
 
 
 (defun github-link ()
+  "Generates a hyperlink to the current line(s) on github, adding
+  it to the kill-ring.
+
+  If an active region is highlighted, the generated link will
+  display the start/end of that region.  Otherwise, the generated
+  link will point to the current line containing the `point'.
+
+  Will attempt to make a link that points to the main branch, if
+  possible.  This is intended to avoid linking to an active
+  development branch for changes unrelated to that development
+  branch.  This behavior can be modified/disabled through use of
+  `github-link-remotes', `github-link-branches', and
+  `github-link-context-lines'."
   (interactive)
 
   ;; TODO: Prefix argument for explicitly using the current branch only.
 
   ;; TODO: Double prefix argument for explicitly using the most recent commit.
 
-  (let* ((branches (filter-sort (github-link-get-branches) 'priority))
+  (let* ((branches (github-link--filter-sort (github-link--get-branches) 'github-link--branch-order))
          (filename (buffer-file-name))
          (region (if (use-region-p) (list (region-beginning) (region-end))
                    (list (point) (point))))
          (lines (mapcar 'line-number-at-pos region))
          (remote-link (cl-some (lambda (branch)
-                                 (make-github-link branch filename lines))
+                                 (github-link--make-link branch filename lines))
                                branches))
          )
 
