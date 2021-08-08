@@ -102,6 +102,9 @@ def plot(df, xaxis, yaxis, shade_between=None, label=None, label_by=None, axes=N
     # Parameter normalization
     if axes is None:
         fig, axes = plt.subplots()
+        return_new_fig = True
+    else:
+        return_new_fig = False
 
     plot_df = {}
 
@@ -110,10 +113,13 @@ def plot(df, xaxis, yaxis, shade_between=None, label=None, label_by=None, axes=N
 
     if isinstance(label_by, str):
         plot_df["label"] = df[label_by]
+        dropna = True
     elif label is not None:
         plot_df["label"] = label
+        dropna = True
     else:
         plot_df["label"] = None
+        dropna = False
 
     if shade_between is not None:
         shade_low, shade_high = shade_between
@@ -136,7 +142,7 @@ def plot(df, xaxis, yaxis, shade_between=None, label=None, label_by=None, axes=N
     valid_rows = plot_df[required_cols].notna().all(axis=1)
     plot_df = plot_df[valid_rows]
 
-    for label, group in plot_df.groupby("label"):
+    for label, group in plot_df.groupby("label", dropna=dropna):
         group = group.sort_values("xaxis")
         (line,) = axes.plot(group.xaxis, group.yaxis, label=label)
         if "shade_low" in group.columns and "shade_high" in group.columns:
@@ -147,3 +153,6 @@ def plot(df, xaxis, yaxis, shade_between=None, label=None, label_by=None, axes=N
                 color=line.get_color(),
                 alpha=0.5,
             )
+
+    if return_new_fig:
+        return fig, axes
