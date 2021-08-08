@@ -245,7 +245,7 @@
                (line-argument (if (= first-line last-line)
                                   (format "L%d" first-line)
                                 (format "L%d-L%d" first-line last-line)))
-               (rel-path (string-trim (github-link--call-git "ls-files" filename)))
+               (rel-path (string-trim (github-link--call-git "ls-files" "--full-name" filename)))
                (url (string-join
                      (list "https://github.com"
                            (oref branch remote-user-name) (oref branch remote-repo-name)
