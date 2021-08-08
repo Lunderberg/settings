@@ -2,11 +2,15 @@
 *.pyc
 build
 dist
+
 dot_emacs.d/tramp
 dot_emacs.d/.org-id-locations
 dot_emacs.d/ede-projects.el
 dot_emacs.d/elpa
+dot_emacs.d/.emacs.desktop
+dot_emacs.d/.emacs.desktop.lock
+dot_emacs.d/custom.el
+dot_emacs.d/.lsp-session-v1
+
 bin/clangd
 bin/clangd_12.0.0
-.lsp-session-v1
-custom.el
