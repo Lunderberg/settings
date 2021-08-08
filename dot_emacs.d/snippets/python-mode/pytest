@@ -1,0 +1,18 @@
+# -*- mode: snippet -*-
+# name: pytest
+# key: pytest
+# --
+#!/usr/bin/env python3
+
+import sys
+import pytest
+
+# pytest_plugins = ['pytest-benchmark', 'tvm.testing.plugin']
+
+
+def test_${1}():
+    $0
+    pass
+
+if __name__ == "__main__":
+    sys.exit(pytest.main(sys.argv))
