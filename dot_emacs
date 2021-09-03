@@ -548,8 +548,9 @@
   :hook
   (c-mode-common . lsp)
   (python-mode . lsp)
-  :config
+  :init
   (setq lsp-keymap-prefix "C-c C-d")
+  :config
   (setq lsp-headerline-breadcrumb-enable nil)
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
