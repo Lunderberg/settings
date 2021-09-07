@@ -105,6 +105,32 @@ function show(){
     IFS=$old
 }
 
+# Adapted from https://stackoverflow.com/a/19067658
+function sleep_until() { # args [-q] <HH[:MM[:SS]]> [more days]
+    local slp tzoff now quiet=false
+
+    if [[ "$1" = "-q" ]]; then
+        shift
+        quiet=true
+    fi
+
+    if [[ $# = 0 ]]; then
+        echo "Missing argument when to wake" >&2
+        return 1
+    fi
+
+    local -a hms=(${1//:/ })
+    printf -v now '%(%s)T' -1
+    printf -v tzoff '%(%z)T\n' $now
+    tzoff=$((0${tzoff:0:1}(3600*${tzoff:1:2}+60*${tzoff:3:2})))
+    slp=$((
+       ( 86400+(now-now%86400) + 10#$hms*3600 + 10#${hms[1]}*60 +
+         ${hms[2]}-tzoff-now ) %86400 + ${2:-0}*86400
+    ))
+    $quiet || printf 'sleep %ss, -> %(%c)T\n' $slp $((now+slp))
+    sleep $slp
+}
+
 #Things not in the github repo
 if [ -f ~/.bash_private ]; then
     source ~/.bash_private
