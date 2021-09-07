@@ -400,11 +400,11 @@
 
 (use-package dired-x
   :ensure nil
-  :commands (dired-jump find-name-dired)
+  :commands (dired-jump find-name-dired dired-omit-mode)
   :bind (("C-x C-j" . dired-jump)
          ("C-x F" . find-name-dired))
-  :config
-  (add-hook 'dired-mode-hook 'dired-omit-mode))
+  :hook
+  (dired-mode . dired-omit-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     org-mode customizations        ;;;
