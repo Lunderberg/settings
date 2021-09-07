@@ -453,8 +453,9 @@
   :ensure nil
   :config
   (append-to-list 'grep-find-ignored-directories
-    '("build" ".build" "build_local" "build_debug"
-      "build_docker_cpu" "build_docker_gpu")
+     '("build" ".build" "build_local" "build_debug"
+      "build_docker" "build_docker_cpu" "build_docker_gpu"
+      "docs/_build" "docs/_staging" "docs/doxygen")
     ))
 
 ;; Close the compilation window if it completed without error.
@@ -571,6 +572,8 @@
   :config
   (setq lsp-ui-sideline-enable nil)
   (setq lsp-ui-doc-enable nil)
+  (setq lsp-progress-via-spinner nil)
+  (setq lsp-progress-function 'ignore)
   )
 
 ;; Add python language server.  Version of jedi is to maintain
@@ -580,6 +583,15 @@
 ;; sudo pip3 install jedi-language-server "jedi<0.18.0"
 (use-package lsp-jedi
   :ensure t)
+
+;; LSP mode doesn't open lsp-progress-via-spinner in
+;; lsp--spinner-start, can leave spinners running if a workspace takes
+;; a while to initialize or has an error while initializing.  Revoking
+;; all spinner privileges as a result.
+(use-package "spinner"
+   :defer t
+   :config
+   (defun spinner-start (&optional type-or-object fps delay)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        C++ customizations          ;;;
