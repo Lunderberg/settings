@@ -1,189 +1,209 @@
 ;; -*-Lisp-*-
 
-(require 'warnings)
-(require 'cl-lib)
+;; (require 'warnings)
 
-(add-to-list 'load-path "~/.emacs.d/misc")
+;; (add-to-list 'load-path "~/.emacs.d/misc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Package Management         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (>= emacs-major-version 24)
-  (require 'package)
-  (add-to-list
-   'package-archives
-   '("melpa" . "http://melpa.org/packages/")
-   t)
-  (package-initialize))
+;; Keep custom-set-variables from being added to the bottom of my
+;; .emacs file.  Needs to be on top, because package-install is the
+;; most common cause.
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file 'noerror)
 
-(defun can-use (package)
-  (if (fboundp 'package-install)
-    (progn
-      (unless (package-installed-p package)
-        (package-install package))
-      (package-installed-p package))
-    nil))
+(require 'package)
+(add-to-list
+ 'package-archives
+ '("melpa" . "http://melpa.org/packages/")
+ t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;         File formats          ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(package-initialize)
 
-;;Because sometimes the site-start.el is useful, and other times, downright annoying.
-(setq magic-mode-alist nil)
+;; Init the list of package.  Only needs to be done once per
+;; installation, but otherwise package-install will complain.
+(unless package-archive-contents
+  (message "Pulling package list from GNU ELPA/MELPA")
+  (package-refresh-contents))
 
-(add-to-list 'magic-mode-alist '("#!/usr/bin/env python" . python-mode))
-(add-to-list 'auto-mode-alist '("SConstruct" . python-mode))
-(add-to-list 'auto-mode-alist '("SConscript" . python-mode))
+(unless (package-installed-p 'use-package)
+  (message "Installing use-package")
+  (package-install 'use-package))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;    Windows settings           ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq use-package-always-ensure t)
 
-(if (string= system-type "windows-nt")
-    (server-start))
-(setq w32-pass-lwindow-to-system nil)
-(setq w32-lwindow-modifier 'hyper)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;         Utility functions          ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; From https://stackoverflow.com/a/24357106/2689797
+(defun append-to-list (list-var elements)
+  "Append ELEMENTS to the end of LIST-VAR"
+  (declare (indent 1))
+  (unless (consp elements)
+    (error "ELEMENTS must be a list"))
+  (let ((list (symbol-value list-var)))
+    (if list
+        (setcdr (last list) elements)
+      (set list-var elements)))
+  (symbol-value list-var))
+
+;; From https://stackoverflow.com/a/17325791/2689797, can be removed
+;; in emacs 28.1 or higher.
+(defun string-replace (fromstring tostring instring)
+  (replace-regexp-in-string (regexp-quote fromstring)
+                            tostring instring nil 'literal))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Display, coloring, fontsize   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(can-use 'rainbow-mode)
+(use-package rainbow-mode
+  :hook (html-mode css-mode web-mode))
 
-;;Font size 10 on my laptop, 12 everywhere else.
-(defun adjust-font-size ()
-  (interactive)
-  (if (display-graphic-p)
-      (set-face-attribute 'default nil :height
-			  (cond ((= (x-display-pixel-height) 1050) 120)
-				((= (x-display-pixel-height) 1080) 120)
-				((= (x-display-pixel-height) 768) 100)
-                                ('t 120)))))
-(global-set-key (kbd "C-x g") 'adjust-font-size)
-(adjust-font-size)
+(defun update-font-size (&optional frame)
+  "Set the font size to something reasonable, given the monitor's dpi"
+  (let* ((frame (or frame (selected-frame)))
+         (display (frame-terminal frame)))
+    (when (display-graphic-p display)
+      (let* ((pixel-height (display-pixel-height display))
+             (pixel-width (display-pixel-width display))
+             (mm-height (float (x-display-mm-height display)))
+             (mm-width (float (x-display-mm-width display)))
+             (dpi (* 25.4 0.5 (+ (/ pixel-height mm-height)
+                                 (/ pixel-width mm-width))))
+             (font-size (cond ((< dpi 80) 100)
+                              ('t 120)))
+             )
 
-(setq rst-level-face-base-light 30) ;RST section header is abysmal otherwise
+        (message "Selecting font size %d for monitor dpi %f" font-size dpi)
+        (set-face-attribute 'default frame :height font-size)))))
 
-(if (or (string= (getenv "TERM") "xterm-256color")
-        (string= (getenv "TERM") "screen-256color")
-	(string= system-type "windows-nt"))
-    ;;Coloring things assuming that I have 256 colors.
-    (progn
-      (when (can-use 'color-theme-modern)
-        (require 'color-theme-modern)
-	(load-theme 'euphoria t t)
-	(enable-theme 'euphoria)
-        (set-face-foreground 'font-lock-preprocessor-face "light sea green")
-        (set-face-foreground 'font-lock-constant-face "light sea green")
-        (require 'hl-line)
-        (global-hl-line-mode t)
-        (set-face-background hl-line-face "gray10")))
-  ;;Color options if I only have 8 colors.
-  (progn
-    (set-face-foreground 'font-lock-comment-face "red")))
+;; Call once for the initial frame, and once for every new frame
+(add-to-list 'after-make-frame-functions 'update-font-size)
+(update-font-size)
+
+
+(use-package color-theme-modern
+  :config
+  (load-theme 'euphoria t t)
+  (enable-theme 'euphoria)
+  (set-face-foreground 'font-lock-preprocessor-face "light sea green")
+  (set-face-foreground 'font-lock-constant-face "light sea green")
+  )
+
+(use-package hl-line
+  :config
+  (global-hl-line-mode t)
+  (set-face-background hl-line-face "gray10")
+  )
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; General keyboard shortcuts    ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(xterm-mouse-mode t) ;Clicks get sent to emacs, not to terminal
-(setq kill-whole-line nil) ;Don't kill newline unless line is empty.
-(setq transient-mark-mode nil) ;Don't highlight everything when leaving a mark
-(setq inhibit-startup-message t) ;It's annoying.
-(setq column-number-mode t) ;Show the column number, not just the line number
-(put 'narrow-to-region 'disabled nil) ;Enable the C-n-n shortcut
-(menu-bar-mode -1) ;Hide the menu bar (Can use with F10)
-(tool-bar-mode -1) ;Hide the menu bar (Can use with F10)
-(scroll-bar-mode -1) ;Hide the scroll bar
-(global-set-key (kbd "<Scroll_Lock>") 'ignore) ;Otherwise, emacs dings whenever I alt-tab in.
-(global-set-key (kbd "M-;") 'comment-or-uncomment-region) ;Preferred over comment-dwim
+;; Startup behavior
+(setq inhibit-startup-message t)
+(setq initial-major-mode 'lisp-mode)
+
+;; Hide the menu, tool, and scroll bar.
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+
+;; Don't highlight everything when leaving a mark
+(setq transient-mark-mode nil)
+
+;; Ignore <Scroll_Lock> sent when alt-tabbing into PuTTY, which dings.
+(global-set-key (kbd "<Scroll_Lock>") 'ignore)
+
+;; Show the column number alongside the line number
+(setq column-number-mode t)
+
+;; Respond to mouse clicks in terminal.
+(xterm-mouse-mode t)
+
+;; Don't kill newline unless line is empty.
+(setq kill-whole-line nil)
+
+;; Tab behavior, use 8 spaces.
 (setq-default tab-width 8)
 (setq-default indent-tabs-mode nil)
-(setq initial-major-mode 'lisp-mode)
-(setq epa-pinentry-mode 'loopback) ; Don't open a new window for gpg password
 
-;; I hate trailing whitespace
-;; Stricter version, remove all trailing whitespace
-;;(add-hook 'before-save-hook 'delete-trailing-whitespace)
-;; Less strict version, only remove trailing ws from modified lines
-(when (can-use 'ws-butler) (ws-butler-global-mode))
+;; Enable the C-n-n shortcut
+(put 'narrow-to-region 'disabled nil)
 
+;; Don't open a new window for gpg password
+(setq epg-pinentry-mode 'loopback)
+
+;;Automatically make script files be executable
+(add-hook 'after-save-hook
+          'executable-make-buffer-file-executable-if-script-p)
+
+;; Enable electric-indent-mode, but keep C-j as newline-and-indent.
 (setq electric-indent-mode t)
-;; I like electric-indent-mode in some places, but I want C-j to always be newline-and-indent.
 (global-set-key [remap electric-newline-and-maybe-indent]
                 'newline-and-indent)
+
+;; The default comment-dwim assumes transient-mark-mode is on.  The
+;; simpler behavior is closer to what I want.
+(global-set-key (kbd "M-;") 'comment-or-uncomment-region)
 
 ;;M-<up> and M-<down> to scroll up/down by one line.
 (global-set-key (kbd "<M-up>") (lambda () (interactive) (scroll-down 1)))
 (global-set-key (kbd "<M-down>") (lambda () (interactive) (scroll-up 1)))
-(global-set-key (kbd "ESC <up>") (lambda () (interactive) (scroll-down 1))) ;Repeating for emacs in terminal
-(global-set-key (kbd "ESC <down>") (lambda () (interactive) (scroll-up 1)))
 
-;;Automatically make script files be executable
-(add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
+;; Before saving, remove trailing whitespace from any modified lines.
+;; Could use delete-trailing-whitespace as a before-save-hook, but
+;; that can lead to huge diffs.
+(use-package ws-butler
+  :config
+  (ws-butler-global-mode))
 
-;; (when (can-use 'keyfreq)
-;;   (require 'keyfreq)
-;;   (keyfreq-mode 1)
-;;   (keyfreq-autosave-mode 1))
+;; Kill/yank go to the system's clipboard.  Requires xclip to be
+;; installed.
+(use-package xclip
+  :config
+  (xclip-mode))
 
-(when (can-use 'xclip)
-  (xclip-mode)
-  )
-
-(defun save-in-other-file (new-filename)
-  (interactive "FFilename:")
-  (write-region (point-min) (point-max) new-filename))
-(global-set-key (kbd "C-x C-z") 'save-in-other-file)
-
-
-;;Change the DISPLAY variable.
-(defun correct-display-variable ()
+;; Update the DISPLAY variable based on the most recent connection to
+;; tmux.  Typically only needed if terminal emacs needs to launch a
+;; GUI, because GUI emacsclient updates the DISPLAY on its own.
+(defun update-display-variable ()
   (interactive)
-  (let ((new-display (shell-command-to-string "tmux showenv | grep DISPLAY | cut -d = -f 2")))
-    (setenv "DISPLAY" new-display)))
+  (let* ((command "tmux showenv | grep DISPLAY | cut -d = -f 2")
+         (display (shell-command-to-string command)))
+    (setenv "DISPLAY" display)))
 
-;;Have a . before the backup name to hide it.
+;; Make hidden backup files .FILE~ instead of FILE~
 (defun make-backup-file-name (filename)
   (expand-file-name
    (concat "." (file-name-nondirectory filename) "~")
    (file-name-directory filename)))
 
-;;Make the directory if it doesn't exist.
-(add-hook 'before-save-hook (lambda ()
-			      (if (not (file-exists-p default-directory))
-				  (make-directory default-directory t))))
+;; Before saving, make the directory if it doesn't exist.
+(defun make-current-directory ()
+  (when (not (file-exists-p default-directory))
+    (make-directory default-directory t)))
+(add-hook 'before-save-hook 'make-current-directory)
 
-;; Helper for compilation. Close the compilation window if there was no error at all.
-(defun compilation-exit-autoclose (status code msg)
-  (when (and (eq status 'exit) (zerop code))
-    (bury-buffer)
-    (delete-window (get-buffer-window (get-buffer "*compilation*"))))
-  (cons msg code))
-(setq compilation-exit-message-function 'compilation-exit-autoclose)
-(global-set-key "\C-\M-C" 'compile)
-
-;; Don't search inside build directories.
-(eval-after-load 'grep
-  '(progn
-     (add-to-list 'grep-find-ignored-directories "build")
-     (add-to-list 'grep-find-ignored-directories ".build")))
-
-;;C-a goes to start of text, then to start of line
-(defun smarter-move-beginning-of-line (arg)
-  (interactive "^p")
-  (setq arg (or arg 1))
-  (when (/= arg 1)
-    (let ((line-move-visual nil))
-      (forward-line (1- arg))))
+;; C-a goes to start of text, then to start of line
+(defun smarter-move-beginning-of-line ()
+  (interactive)
   (let ((orig-point (point)))
     (back-to-indentation)
     (when (= orig-point (point))
-      (move-beginning-of-line 1))))
+      (move-beginning-of-line nil))))
 (global-set-key (kbd "C-a") 'smarter-move-beginning-of-line)
 
-;;Allows for calculations within emacs.
+;; Use emacs as a calculator.  Evaluate and replace the preceding
+;; sexp.
 (defun replace-last-sexp ()
   (interactive)
   (let ((value (eval (preceding-sexp))))
@@ -213,14 +233,14 @@
 	(message "File '%s' deleted." filename)))))
 (global-set-key (kbd "C-x n k") 'kill-buffer-and-file)
 
-;;Ignore C-z if you are in X11 mode.
+;; Ignore C-z in X11 frames.
 (defun suspend-frame-if-tty ()
   (interactive)
   (if (not (display-graphic-p))
       (suspend-frame)))
 (global-set-key [remap suspend-frame] 'suspend-frame-if-tty)
 
-;;Ask before exiting a long-lived session
+;; Ask before exiting a long-lived session
 (defun live-time ()
   (let* ((time (assoc 'etime (process-attributes (emacs-pid))))
 	 (high (cadr time))
@@ -229,11 +249,11 @@
     (+ (* high 65536) low (/ usec 1e6))))
 (defun old-emacs-query-exit ()
   (interactive)
-  (if (or (frame-parameter nil 'client)
-          (or (< (live-time) 86400)
-              (yes-or-no-p (format "Exit this %d-day-old emacs session? "
-                                   (/ (live-time) 86400)))))
-      (save-buffers-kill-terminal)))
+  (when (or (frame-parameter nil 'client)
+            (< (live-time) 86400)
+            (yes-or-no-p (format "Exit this %d-day-old emacs session? "
+                                 (/ (live-time) 86400))))
+    (save-buffers-kill-terminal)))
 (global-set-key [remap save-buffers-kill-terminal]
 		'old-emacs-query-exit)
 
@@ -243,191 +263,208 @@
 (global-set-key [remap just-one-space]
                 'just-one-space-with-newline)
 
-(require 're-builder)
-(setq reb-re-syntax 'string)
-
-(global-set-key (kbd "C-x y") 'find-file-other-window)
-
-;; Quit having the custom-set-variables added to the bottom of my
-;; .emacs file.  They typically show up on a new installation, after
-;; calling package-install.
-(setq custom-file (concat user-emacs-directory "custom.el"))
-(load custom-file 'noerror)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      hexl customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Customizations for viewing binary files.  Not having used these
+;; since 2017, they're commented out for now.
+
 ;; http://emacs.stackexchange.com/a/10297/118
 
-(defun buffer-binary-p (&optional buffer)
-  "Return whether BUFFER or the current buffer is binary.
-A binary buffer is defined as containing at least on null byte.
-Returns either nil, or the position of the first null byte."
-  (with-current-buffer (or buffer (current-buffer))
-    (save-excursion
-      (goto-char (point-min))
-      (search-forward (string ?\x00) nil t 1))))
+;; (defun buffer-binary-p (&optional buffer)
+;;   "Return whether BUFFER or the current buffer is binary.
+;; A binary buffer is defined as containing at least on null byte.
+;; Returns either nil, or the position of the first null byte."
+;;   (with-current-buffer (or buffer (current-buffer))
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (search-forward (string ?\x00) nil t 1))))
 
-(defun hexl-if-binary ()
-  "If `hexl-mode' is not already active, and the current buffer
-is binary, activate `hexl-mode'."
-  (interactive)
-  (unless (eq major-mode 'hexl-mode)
-    (when (buffer-binary-p)
-      (hexl-mode))))
+;; (defun hexl-if-binary ()
+;;   "If `hexl-mode' is not already active, and the current buffer
+;; is binary, activate `hexl-mode'."
+;;   (interactive)
+;;   (unless (eq major-mode 'hexl-mode)
+;;     (when (buffer-binary-p)
+;;       (hexl-mode))))
 
-(add-hook 'find-file-hooks 'hexl-if-binary)
+;; (add-hook 'find-file-hooks 'hexl-if-binary)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      git customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (when (can-use 'git-gutter)
-;;   (require 'git-gutter)
-;;   (global-git-gutter-mode +1)
-;;   (custom-set-variables
-;;    '(git-gutter:hide-gutter t))
-;;   (set-face-foreground 'git-gutter:separator "yellow")
+;; TODO: Uncomment this
+;; (use-package magit
+;;   :commands (magit-status)
+;;   :bind (("C-c C-g" . magit-status))
+;;   )
 
-;;   (defun conditional-sep ()
-;;     (interactive)
-;;     (custom-set-variables
-;;      (list 'git-gutter:separator-sign (if (display-graphic-p) "" "|"))))
-;;   (global-set-key (kbd "C-x |") 'conditional-sep))
-
-(defun git-version ()
-  (car (last
-        (split-string
-         (shell-command-to-string "git --version")))))
-
-;; (unless (version< (git-version) "1.9.4")
-;;   (can-use 'magit)
-;;   (global-set-key (kbd "C-c C-g") 'magit-status))
-
-(autoload 'github-link "github-link" "Github Link" t)
-(global-set-key (kbd "C-c g") 'github-link)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;    rudel customizations            ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; (when (can-use 'rudel)
-;;   (autoload 'rudel-join-session "rudel-loaddefs" "Rudel" t)
-;;   (defun rudel-better-join (user color)
-;;     (interactive "sUsername: \nsColor: ")
-;;     (rudel-join-session (list :encryption nil
-;;                               :username user
-;;                               :color color
-;;                               :global-password nil
-;;                               :user-password nil
-;;                               :host "bluegill"
-;;                               :port 6522
-;;                               :protocol-backend (rudel-backend-get 'protocol 'obby)
-;;                               :transport-backend (rudel-backend-get 'transport 'tcp)
-;;                               )))
-;;   (global-set-key (kbd "C-c C-c j") 'rudel-better-join)
-;;   (eval-after-load 'rudel '((set-face-attribute 'rudel-author-overlay-face nil
-;;                                                 :background nil
-;;                                                 :underline "black"))))
+(use-package github-link
+  :load-path "misc"
+  :commands (github-link)
+  :bind (("C-c g" . github-link)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     ibuffer customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'ibuffer)
-(global-set-key "\C-x\C-b" 'ibuffer) ;Open a menu with C-x C-b
-(setq ibuffer-show-empty-filter-groups nil)
-(setq ibuffer-expert t) ;Don't query before deleting unmodified buffers
-(setq ibuffer-saved-filter-groups
-      (quote (("default"
-	       ("org" (mode . org-mode))
-               ("TVM C++" (and (filename . "tvm")
-                               (or (mode . c-mode) (mode . c++-mode))))
-               ("TVM Python" (and (filename . "tvm")
-                                  (mode . python-mode)))
-               ("TVM Misc." (filename . "tvm"))
-               ("pythoth" (filename . "pythoth"))
-               ("screeps" (filename . "screeps"))
-               ("ucgretina" (filename . "ucgretina"))
-	       ("hermes" (filename . "hermes"))
-               ("lua-bindings" (filename . "lua-bindings"))
-	       ("Twilight Imperium" (filename . "Twilight.Imperium"))
-	       ("omnicolor-images" (filename . "omnicolor-images"))
-               ("battle-bots" (filename . "battle-bots"))
-	       ("GrROOT" (filename . "GrROOT"))
-               ("GRUTinizer" (filename . "GRUTinizer"))
-               ("SegaGeant" (filename . "SegaGeant"))
-	       ("DDAS" (or
-			(filename . "ddas")
-			(filename . "DDAS")))
-	       ("e12501" (filename . "e12501"))
-	       ("pyCharGen" (filename . "pyCharGen"))
-	       ("FillMaster" (filename . "FillMaster"))
-	       ("Misc. C" (or
-			   (mode . c-mode)
-			   (mode . c++-mode)))
-	       ("Misc. python" (mode . python-mode))
-	       ("emacs" (name . "^\\*.*\\*$"))
-	       ("dired" (mode . dired-mode))
-	       ))))
-(add-hook 'ibuffer-mode-hook
-	  (lambda () (ibuffer-switch-to-saved-filter-groups "default")))
 
-(defun ibuffer-keys ()
-  (local-set-key (kbd "<down-mouse-1>") 'ibuffer-visit-buffer-other-window))
-(add-hook 'ibuffer-hook 'ibuffer-keys)
+
+(setq my-ibuffer-groups-top
+      '(("TVM C++" (and (filename . "tvm")
+                        (or (mode . c-mode) (mode . c++-mode))))
+        ("TVM Python" (and (filename . "tvm")
+                           (mode . python-mode)))
+        ("TVM Misc." (filename . "tvm"))
+        ))
+
+(setq my-ibuffer-groups-bottom
+      '(("emacs" (name . "^\\*.*\\*$"))
+	("dired" (mode . dired-mode))
+        ))
+
+(defun update-ibuffer-groups ()
+  (defun repo-filter (repo-dir)
+    `(,(file-name-nondirectory (directory-file-name repo-dir))
+      (filename . ,(expand-file-name repo-dir)))
+    )
+
+  (defun generate-repo-filters ()
+    (let* ((file-names (seq-map 'buffer-file-name (buffer-list)))
+         (file-names (seq-filter 'identity file-names))
+         (repo-dirs (seq-map 'vc-git-root file-names))
+         (repo-dirs (seq-filter 'identity repo-dirs))
+         (repo-dirs (seq-uniq repo-dirs))
+         (non-directory (seq-map (lambda (dir) (file-name-nondirectory (directory-file-name dir))) repo-dirs))
+         (filters (seq-map 'repo-filter repo-dirs))
+         )
+    filters
+    ))
+
+  (defun is-prog-mode-p (mode)
+    (eq (get mode 'derived-mode-parent) 'prog-mode))
+
+  (defun mode-filter (mode)
+    `(,(string-replace "-mode" "" (symbol-name mode))
+      (mode . ,mode))
+    )
+
+  (defun generate-mode-filters ()
+    (let* ((modes (seq-map (lambda (buffer) (buffer-local-value 'major-mode buffer)) (buffer-list)))
+           (modes (seq-uniq modes))
+           (modes (seq-filter 'is-prog-mode-p modes))
+           (filters (seq-map 'mode-filter modes))
+           )
+      filters
+      ))
+
+  ;; The display order in ibuffer is the same as the filter priority.
+  ;; I want the bottom filters to take priority over the repo/mode
+  ;; filters, so the repo/mode filters should be explicitly filtered
+  ;; to not include anything that matches the bottom filters.
+  (defun not-bottom-group (filter-groups)
+    (let ((not-bottom `(not (or . ,(seq-map (lambda (g) (nth 1 g)) my-ibuffer-groups-bottom)))))
+      (seq-map (lambda (group) `(,(car group) (and ,(nth 1 group) ,not-bottom)))
+               filter-groups)
+      ))
+
+  (setq ibuffer-filter-groups
+        (seq-concatenate 'list
+                         my-ibuffer-groups-top
+                         (not-bottom-group (generate-repo-filters))
+                         (not-bottom-group (generate-mode-filters))
+                         my-ibuffer-groups-bottom
+                         ))
+  (ibuffer-update nil t)
+  )
+
+(use-package ibuffer
+  :commands (ibuffer)
+  :bind (("C-x C-b" . ibuffer)
+         :map ibuffer-mode-map
+         ("<down-mouse-1>" . ibuffer-visit-buffer))
+  :config
+  (setq ibuffer-show-empty-filter-groups nil)
+  ;; ibuffer-expert, no query before closing unmodified buffers
+  (setq ibuffer-expert t)
+  (add-hook 'ibuffer-mode-hook 'update-ibuffer-groups)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       dired customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-; Enables C-x C-j to jump to the current file in dired.
-(require 'dired-x)
-
-; Find all files matching name.
-(global-set-key (kbd "C-x F") 'find-name-dired)
-
-; Hide dotfiles
-(add-hook 'dired-mode-hook 'dired-omit-mode)
+(use-package dired-x
+  :ensure nil
+  :commands (dired-jump find-name-dired)
+  :bind (("C-x C-j" . dired-jump)
+         ("C-x F" . find-name-dired))
+  :config
+  (add-hook 'dired-mode-hook 'dired-omit-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     org-mode customizations        ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(require 'org)
-(global-set-key (kbd "C-c a") 'org-agenda)
-(setq org-log-done t)
-(setq org-startup-folded nil)
-(setq org-agenda-files (seq-filter 'file-exists-p (list "~/todo.org" "~/TODO.org" "~/org")))
-(setq org-agenda-files
-      (cl-remove-if-not 'file-exists-p org-agenda-files))
-(global-set-key [remap org-beginning-of-line]
-                'smarter-move-beginning-of-line)
-(set-face-background 'org-agenda-clocking "black")
-(set-face-foreground 'org-agenda-clocking "deep sky blue")
-(add-to-list 'warning-suppress-types '(undo discard-info))
-(setq org-todo-keywords
-      '((sequence "TODO" "WAITING" "|" "DONE" "CANCELLED")))
+(use-package org
+  :ensure nil
+  :commands (org-agenda)
+  :bind (("C-c a" . org-agenda)
+         :map org-mode-map
+         ;; org-mode has org-beginning-of-line, while I want to keep
+         ;; my usual.
+         ("C-a" . smarter-move-beginning-of-line)
+         )
+  :config
+  (setq org-log-done t)
+  (setq org-startup-folded nil)
+  (setq org-agenda-files (seq-filter 'file-exists-p '("~/todo.org" "~/TODO.org" "~/org")))
+  (add-to-list 'warning-suppress-types '(undo discard-info))
+  (setq org-todo-keywords
+        '((sequence "TODO" "WAITING" "|" "DONE" "CANCELLED")))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     yasnippet customizations    ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (can-use 'yasnippet)
-  (require 'yasnippet)
-  (define-key yas-minor-mode-map (kbd "<tab>") nil)
-  (define-key yas-minor-mode-map (kbd "TAB") nil)
-  (define-key yas-minor-mode-map (kbd "C-c TAB") 'yas-expand)
-  (yas-global-mode 1)
-  (setq yas-snippet-dirs '("~/.emacs.d/snippets")))
-
+(use-package yasnippet
+  :commands (yas-expand)
+  :bind (("C-c TAB" . yas-expand)
+         :map yas-minor-mode-map
+         ("<tab>" . nil)
+         ("TAB" . nil))
+  :config
+  (yas-global-mode)
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       makefile customizations       ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Don't search inside build directories.
+(use-package grep
+  :ensure nil
+  :config
+  (append-to-list 'grep-find-ignored-directories
+    '("build" ".build" "build_local" "build_debug"
+      "build_docker_cpu" "build_docker_gpu")
+    ))
+
+;; Close the compilation window if it completed without error.
+;; TODO: Don't close compilation window if it had something else in it
+;; previously.  Instead, switch back to that bufffer.
+(defun compilation-exit-autoclose (status code msg)
+  (when (and (eq status 'exit) (zerop code))
+    (bury-buffer)
+    (delete-window (get-buffer-window (get-buffer "*compilation*"))))
+  (cons msg code))
 
 (defun parent-directory (dir)
   (unless (equal "/" dir)
@@ -441,7 +478,6 @@ is binary, activate `hexl-mode'."
       (when parent
         (find-file-in-hierarchy parent pattern)))))
 
-(setq compilation-scroll-output 'first-error)
 
 (defun determine-compile-program (filename)
   (cond ((string-match "\\(GNUm\\|M\\|m\\)akefile" filename) "make")
@@ -468,49 +504,91 @@ is binary, activate `hexl-mode'."
   (interactive "p")
   (find-makefile-compile-impl (> clean 1) 8))
 
-(require 'ansi-color)
+(use-package ansi-color
+  :ensure nil
+  :commands (ansi-color-apply-on-region))
+
 (defun colorize-compilation-buffer ()
   (toggle-read-only)
   (ansi-color-apply-on-region (point-min) (point-max))
   (toggle-read-only))
-(add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
 (defun colorize-current-buffer ()
   (interactive)
   (ansi-color-apply-on-region (point-min) (point-max)))
 
-(add-to-list 'auto-mode-alist '("\\.inc\\'" . makefile-gmake-mode))
-(eval-after-load 'make-mode
-  '(progn
-     (define-key makefile-mode-map (kbd "C-c c") 'find-makefile-compile)
-     (define-key makefile-mode-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
+(use-package compile
+  :ensure nil
+  :commands (compile)
+  :bind (("C-M-C" . compile))
+  :config
+  (setq compilation-scroll-output 'first-error)
+  (setq compilation-exit-message-function 'compilation-exit-autoclose)
+  :hook (compilation-filter . colorize-compilation-buffer)
+  )
 
+(use-package make-mode
+  :ensure nil
+  :mode ("\\.inc\\'" . makefile-gmake-mode)
+  :bind (:map makefile-mode-map
+              ("C-c c" . find-makefile-compile)
+              ("C-c C-c" . find-makefile-compile-fast))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        LSP customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Overall config defined here, then language-specific modes defined
-;; in language-specific sections.
-(when (and (can-use 'lsp-mode)
-           (can-use 'lsp-ui))
-  (setq lsp-keymap-prefix "C-c C-d")
-  (require 'lsp-mode)
 
+;; For the TVM-specific langage server,
+;; sudo pip3 install ffi-navigator
+
+(use-package lsp-mode
+  :ensure t
+  :hook
+  (c-mode-common . lsp)
+  (python-mode . lsp)
+  :init
+  (setq lsp-keymap-prefix "C-c C-d")
+  :config
   (setq lsp-headerline-breadcrumb-enable nil)
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
+
+  ;; TODO: Run the check for ffi-navigator asynchronously
+  (when (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil))
+    (lsp-register-client
+     (make-lsp-client
+      :new-connection (lsp-stdio-connection '("python3" "-m" "ffi_navigator.langserver"))
+      :major-modes '(python-mode c++-mode)
+      :server-id 'ffi-navigator
+      :add-on? t))
+    )
+  )
+
+(use-package lsp-ui
+  :ensure t
+  :config
   (setq lsp-ui-sideline-enable nil)
   (setq lsp-ui-doc-enable nil)
   )
+
+;; Add python language server.  Version of jedi is to maintain
+;; compatibility with IPython 7.13 (ubuntu 20.04's apt version).
+;; Latest PyPI version of ipython is compability with latest jedi.
+
+;; sudo pip3 install jedi-language-server "jedi<0.18.0"
+(use-package lsp-jedi
+  :ensure t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        C++ customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; Per project, either add these commands to CMakeLists.txt, or
-;; compile with `cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..`
+;; For LSP integration, for each project, either add these commands to
+;; CMakeLists.txt, or compile with `cmake
+;; -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..`
 
 ;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ;; # Also needed for cmake<3.18.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/16588)
@@ -521,77 +599,46 @@ is binary, activate `hexl-mode'."
 ;; build/compile_commands.json, but I'm lazy so I download clangd 13.0
 ;; in the settings/install.py
 
-(when (can-use 'lsp-mode)
-  (add-hook 'c-mode-common-hook 'lsp))
 
-(if (can-use 'cuda-mode)
-    (progn (add-to-list 'auto-mode-alist '("\\.cu$" . cuda-mode))
-           (add-to-list 'auto-mode-alist '("\\.cuh$" . cuda-mode)))
-  (progn (add-to-list 'auto-mode-alist '("\\.cu$" . c++-mode))
-         (add-to-list 'auto-mode-alist '("\\.cuh$" . c++-mode)))
+;; TODO: Better find-file, should look up relative to a .git
+;; directory.
+(use-package find-file
+  :ensure t
+  :config
+  (setq-default ff-always-in-other-window nil)
+  (setq cc-search-directories
+        '("." "../src" "../include" "src" "include" "/usr/include"
+          "./*/include" "../include/*" "../include/*/detail"
+          "../../src" "../../include"
+          "../../../src" "../libraries/*"
+          "../../../include" "../libraries/*/*"
+          "../../*/include" "../../*/src" "../*/*/src"
+          ))
+  (setq cc-other-file-alist
+        '(("\\.cc\\'" (".hh" ".h"))
+          ("\\.hh\\'" (".cc" ".C" ".cxx" ".cu"))
+          ("\\.c\\'" (".h"))
+          ("\\.h\\'" (".cxx" ".c" ".cc" ".C" ".CC" ".cpp" ".cu"))
+          ("\\.C\\'" (".H" ".hh" ".h"))
+          ("\\.H\\'" (".C" ".CC"))
+          ("\\.CC\\'" (".HH" ".H" ".hh" ".h"))
+          ("\\.HH\\'" (".CC"))
+          ("\\.c\\+\\+\\'" (".h++" ".hh" ".h"))
+          ("\\.h\\+\\+\\'" (".c++"))
+
+          ("\\.cu\\'" (".hh" ".h"))
+          ("\\.cuh\\'" (".cu"))
+          ("\\.cpp\\'" (".hpp" ".hh" ".h"))
+          ("\\.hpp\\'" (".cpp"))
+          ("\\.cxx\\'" (".h" ".hxx" ".hh"))
+          ("\\.hxx\\'" (".cxx"))
+          ))
   )
-
-(global-set-key (kbd "C-c C-g") 'gud-gdb)
-
-
-(add-hook 'c-initialization-hook
-          '(lambda ()
-	     (define-key c-mode-base-map (kbd "C-c C-f") 'ff-find-other-file)
-             (define-key c-mode-base-map (kbd "C-j") 'newline-and-indent)
-             (define-key c-mode-base-map (kbd "C-c c") 'find-makefile-compile)
-             (define-key c-mode-base-map (kbd "C-c C-c") 'find-makefile-compile-fast)))
-
-(setq-default ff-always-in-other-window nil)
-(add-to-list 'auto-mode-alist '("\\.h$" . c++-mode))
-(setq cc-other-file-alist '(("\\.cc\\'"
-                             (".hh" ".h"))
-                            ("\\.hh\\'"
-                             (".cc" ".C" ".cxx" ".cu"))
-                            ("\\.c\\'"
-                             (".h"))
-                            ("\\.h\\'"
-                             (".cxx" ".c" ".cc" ".C" ".CC" ".cpp" ".cu"))
-                            ("\\.C\\'"
-                             (".H" ".hh" ".h"))
-                            ("\\.H\\'"
-                             (".C" ".CC"))
-                            ("\\.CC\\'"
-                             (".HH" ".H" ".hh" ".h"))
-                            ("\\.HH\\'"
-                             (".CC"))
-                            ("\\.c\\+\\+\\'"
-                             (".h++" ".hh" ".h"))
-                            ("\\.h\\+\\+\\'"
-                             (".c++"))
-
-                            ("\\.cu\\'"
-                             (".hh" ".h"))
-                            ("\\.cuh\\'"
-                             (".cu"))
-                            ("\\.cpp\\'"
-                             (".hpp" ".hh" ".h"))
-                            ("\\.hpp\\'"
-                             (".cpp"))
-                            ("\\.cxx\\'"
-                             (".h" ".hxx" ".hh"))
-                            ("\\.hxx\\'"
-                             (".cxx"))))
-(setq cc-search-directories '("." "../src" "../include" "src" "include" "/usr/include"
-                              "./*/include" "../include/*" "../include/*/detail"
-                               "../../src" "../../include"
-                               "../../../src" "../libraries/*"
-                               "../../../include" "../libraries/*/*"
-                               "../../*/include" "../../*/src" "../*/*/src"
-                               ))
-
-(when (can-use 'clang-format+)
-  (add-hook 'c-mode-common-hook #'clang-format+-mode))
-
 
 ;; My preferred C/C++ indentation style.  Files will be overwritten on
 ;; save by any project-specific clang-format configs, but gets
 ;; somewhere reasonable while editing, or for new projects.
-(defconst my-c-style
+(defconst lunderberg-c-style
   '((c-electric-pound-behavior . 'alignleft)
 
     (c-basic-offset . 2)
@@ -627,29 +674,53 @@ is binary, activate `hexl-mode'."
                         (arglist-close . 0)
                         (case-label . +)
                         (statement-case-intro . +)
-                        ;; (inclass . ++) ; For extra indenting after public:
+                        (inclass . +)
                         (access-label . -)
                         (label . -)
                         (substatement-open . 0)
                         (innamespace . [0])
                         (block-open . 0)))
     )
-  "My C++/C Programming Style")
+  "Lunderberg C++/C Programming Style")
 
-(defun my-c-mode-common-hook ()
-  (c-add-style "My" my-c-style 'set-this-style)
+(use-package cc-mode
+  :ensure nil
+  :mode ("\\.h$" . c++-mode)
+  :bind (:map c-mode-base-map
+              ("C-c C-f" . ff-find-other-file)
+              ("C-j" . newline-and-indent)
+              ("C-c c" . find-makefile-compile)
+              ("C-c C-c" . find-makefile-compile-fast))
+
+  :config
   (c-toggle-auto-newline -1)
-  (c-toggle-hungry-state -1))
+  (c-toggle-hungry-state -1)
+  (c-add-style "lunderberg" lunderberg-c-style)
+  (add-to-list 'c-default-style '(c-mode . "lunderberg"))
+  (add-to-list 'c-default-style '(c++-mode . "lunderberg"))
+  (add-to-list 'c-default-style '(cuda-mode . "lunderberg"))
+  )
 
-(add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
+(use-package cuda-mode
+  :ensure t
+  :load-path "misc"
+  :mode ("\\.cu$" "\\.cuh$"))
+
+
+;;(global-set-key (kbd "C-c C-g") 'gud-gdb)
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   PHP/Web customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(autoload 'web-mode "web-mode" "Web Mode" t)
-(add-to-list 'auto-mode-alist '("\\.php$" . web-mode))
+(use-package web-mode
+  :ensure t
+  :mode "\\.php$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        Subprocesses                ;;;
@@ -715,98 +786,104 @@ is binary, activate `hexl-mode'."
 ;;;      Python customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(eval-after-load 'python
-  '(define-key python-mode-map (kbd "C-c C-c") 'execute-current-buffer))
+(use-package python
+  :ensure nil
+  :mode ("SConstruct" "SConscript")
+  :magic ("#!/usr/bin/env python")
+  :bind (:map python-mode-map
+              ("C-c C-c" . execute-current-buffer))
+  :config
+  ;; electric-indent-mode does the complete wrong thing in many cases
+  ;; in python.  When typing a colon, it re-indents the current line,
+  ;; even if I have already set the desired indentation.
+  (add-hook 'python-mode-hook
+            '(lambda () (electric-indent-local-mode -1)))
+  )
 
-;; electric-indent-mode does the complete wrong thing in many cases in python
-;; When typing a colon, it re-indents the current line,
-;;   even if I have already set the desired indentation.
-(add-hook 'python-mode-hook '(lambda ()
-   (electric-indent-local-mode -1)))
+(use-package blacken
+  :ensure t
+  :hook (python-mode . blacken-mode))
 
-(when (can-use 'blacken)
-  (add-hook 'python-mode-hook #'blacken-mode))
 
-;; Add python language server.  Version of jedi is to maintain
-;; compatibility with IPython 7.13 (ubuntu 20.04's apt version).
-;; Latest PyPI version of ipython is compability with latest jedi.
-
-;; sudo pip3 install jedi-language-server "jedi<0.18.0"
-(when (can-use 'lsp-mode)
-  (add-hook 'python-mode-hook 'lsp)
-  (when (can-use 'lsp-jedi)
-    (require 'lsp-jedi)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       LaTeX customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(can-use 'auctex)
+(use-package latex
+  :defer t
+  :ensure auctex
+  ;; :mode ("\\.inc\\'" . latex-mode)
+  :bind (:map LaTeX-mode-map
+              ;; Need to redefine C-j, because auctex defines it as
+              ;; reindent-newline-and-indent.
+              ("C-j" . newline-and-indent)
+              ("C-c c" . find-makefile-compile)
+              ("C-c C-c" . find-makefile-compile-fast)
+              )
+  :config
+  (add-hook 'LaTeX-mode-hook
+            '(lambda ()
+               (TeX-fold-mode 1)
+               (auto-fill-mode 1)
+               (electric-indent-local-mode nil)
 
-;; Filenames ending in .inc are opened as LaTeX files
-;;(add-to-list 'auto-mode-alist '("\\.inc\\'" . latex-mode))
-
-;; Why would I want indent-newline-and-indent instead of the standard?
-(defun my-newline-and-indent ()
-  (interactive)
-  (newline)
-  (funcall indent-line-function))
-
-(add-hook 'LaTeX-mode-hook '(lambda ()
-  (local-set-key (kbd "C-j") 'my-newline-and-indent)
-  (local-set-key (kbd "C-c c") 'find-makefile-compile)
-  (local-set-key (kbd "C-c C-c") 'find-makefile-compile-fast)
-  (TeX-fold-mode 1)
-  (auto-fill-mode 1)
-  (electric-indent-local-mode nil)))
-
-;; ;; Automatically compile to pdf whenever saving.
-;; (make-subprocess-command latex-compile "scons -u")
-;; (add-hook 'LaTeX-mode-hook '(lambda ()
-;; 			      (add-hook 'after-save-hook 'latex-compile nil 'make-it-local)))
+               ;; Automatically compile to pdf after saving
+               ;;(add-hook 'after-save-hook 'find-makefile-compile nil 'make-it-local)
+               ))
+  )
 
 ;; Don't autocomplete to the intermediate files.
-(setq completion-ignored-extensions
-      (append completion-ignored-extensions
-	      '(".aux" ".fls" ".out" ".pdf" ".toc")))
+(append-to-list 'completion-ignored-extensions
+  '(".aux" ".fls" ".out" ".pdf" ".toc"))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      PoV-Ray customizations      ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (can-use 'pov-mode)
-  (autoload 'pov-mode "pov-mode" "PoV-Ray scene file" t)
-  (add-to-list 'auto-mode-alist '("\\.pov\\'" . pov-mode))
 
 
-  ;; ;;Display the image in another window.
-  ;; (defun povray-render-sentinel (process event)
-  ;;   (let* ((success (string-equal event "finished\n"))
-  ;;          (povfile-buffer (get-buffer (format "%s" process)))
-  ;;          (povfile-window (get-buffer-window povfile-buffer))
-  ;;          (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
-  ;;          (png-buffer (get-file-buffer png-filename)))
-  ;;     (if success	(progn
-  ;;                         (if (display-graphic-p) (progn
-  ;;                                                   (if png-buffer (kill-buffer png-buffer))
-  ;;                                                   (find-file-other-window png-filename)
-  ;;                                                   (other-window -1)))))))
+;; Display the image in another window after rendering
+(defun povray-render-sentinel (process event)
+  (let* ((success (string-equal event "finished\n"))
+         (povfile-buffer (get-buffer (format "%s" process)))
+         (povfile-window (get-buffer-window povfile-buffer))
+         (png-filename (replace-regexp-in-string "\.pov$" "\.png" (buffer-file-name povfile-buffer)))
+         (png-buffer (get-file-buffer png-filename)))
+    (when (and success	(display-graphic-p))
+      (when png-buffer (kill-buffer png-buffer))
+      (find-file-other-window png-filename)
+      (other-window -1))))
 
-  ;;Render the current povray file
-  (make-subprocess-command povray-render
-                           (format "povray_build.py %s" (buffer-name)))
+;;Render the current povray file, using povray_build.py script
+(make-subprocess-command povray-render
+                         (format "povray_build.py %s" (buffer-name)))
 
-  ;; ;;Render the current povray file
-  ;; (make-subprocess-command povray-render
-  ;;                          (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
-  ;;                          povray-render-sentinel)
-  (eval-after-load 'pov-mode
-    '(progn
-       (dolist (key '("C-c C-c 1" "C-c C-c 2" "C-c C-c 3" "C-c C-c 4" "C-c C-c 5"
-                      "C-c C-c c" "C-c C-c e" "C-c C-c h" "C-c C-c i"
-                      "C-c C-c l" "C-c C-c r" "C-c C-c v"))
-         (define-key pov-mode-map (kbd key) nil))
-       (define-key pov-mode-map (kbd "C-c C-c") 'povray-render))))
+;; Older version, call Render the current povray file
+;; (make-subprocess-command povray-render
+;;                          (format "scons -u %s" (replace-regexp-in-string "\.pov$" "\.png" (buffer-name)))
+;;                          povray-render-sentinel)
+
+
+(use-package pov-mode
+  :mode "\\.pov\\'"
+  :bind (:map
+         pov-mode-map
+         ("C-c C-c 1" . nil)
+         ("C-c C-c 2" . nil)
+         ("C-c C-c 3" . nil)
+         ("C-c C-c 4" . nil)
+         ("C-c C-c 5" . nil)
+         ("C-c C-c c" . nil)
+         ("C-c C-c e" . nil)
+         ("C-c C-c h" . nil)
+         ("C-c C-c i" . nil)
+         ("C-c C-c l" . nil)
+         ("C-c C-c r" . nil)
+         ("C-c C-c v" . nil)
+         ("C-c C-c" . povray-render)))
 
 
 
@@ -814,116 +891,81 @@ is binary, activate `hexl-mode'."
 ;;;      golang  customizations      ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(add-hook 'go-mode-hook
-   (lambda ()
-     (when (can-use 'go-mode)
-       (autoload 'go-mode "go-mode" "Go editing mode." t)
-       (add-to-list 'auto-mode-alist '("\\.go$" . go-mode))
-       (add-hook 'before-save-hook 'gofmt-before-save)
-       (setq tab-width 2)
-       (setq indent-tabs-mode 1))))
+(use-package go-mode
+  :mode "\\.go$"
+
+  :config
+  ;; Don't want this in the :hook section, because it only needs to be
+  ;; loaded if go-mode is used.
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-hook 'go-mode-hook
+            (lambda () (setq tab-width 2)
+              (setq indent-tabs-mode 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        lua customizations           ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (can-use 'lua-mode)
-  (autoload 'lua-mode "lua-mode" "Lua editing mode." t)
-  (add-to-list 'auto-mode-alist '("\\.lua$" . lua-mode))
-  (add-to-list 'interpreter-mode-alist '("lua" . lua-mode)))
-
+(use-package lua-mode
+  :mode "\\.lua$"
+  :interpreter "lua")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;        rust customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(when (can-use 'rust-mode)
-  (autoload 'rust-mode "rust-mode" "Rust editing mode." t)
-  (add-to-list 'auto-mode-alist '("\\.rs$" . rust-mode)))
-
+;; The same as rust-compile, but with the --all-targets flag.
 (defun rust-compile-all ()
   "Compile using `cargo build`"
   (interactive)
   (rust--compile "%s build --all-targets" rust-cargo-bin))
 
-(eval-after-load 'rust-mode
-  `(progn
-     (define-key rust-mode-map (kbd "C-c C-c") 'rust-compile-all)
-     (define-key rust-mode-map (kbd "C-c C-r") 'rust-run)
-     (define-key rust-mode-map (kbd "C-c C-t") 'rust-test)
-     (setq rust-format-on-save t)))
+;; For LSP integration, install rust-analyzer using rustup
+;;     $ rustup +nightly component add rust-analyzer-preview
+;;
+;; Ref: https://rust-analyzer.github.io/manual.html#rustup
 
-
-
-(when (can-use 'lsp-mode)
+(use-package rust-mode
+  :after (lsp-mode)
+  :mode "\\.rs$"
+  :bind (:map
+         rust-mode-map
+         ("C-c C-c" . rust-compile-all)
+         ("C-c C-r" . rust-run)
+         ("C-c C-t" . rust-test))
+  :config
+  (setq rust-format-on-save t)
   (setq lsp-rust-server 'rust-analyzer)
   (setq lsp-rust-analyzer-server-command '("rustup" "run" "nightly" "rust-analyzer"))
-  ;; Line is necessary with current version of lsp-rust.
-  ;; https://github.com/emacs-lsp/lsp-mode/pull/2853
-  (setq lsp-rust-analyzer-server-args lsp-rust-analyzer-server-command)
-
-  (add-hook 'rust-mode-hook 'lsp)
+  :hook
+  (rust-mode . lsp)
   )
-
-;; ;; Setup for jump to definition and autocomplete.  Needs installation
-;; ;; of racer and rust source to work.
-;; ;; $ cargo +nightly install racer
-;; ;; $ rustup add component rust-src
-;; (when (can-use 'racer)
-;;   (eval-after-load 'rust-mode
-;;     `(progn
-;;        ;; Use newer path for rust source.  Needed as of 2021-02-28.
-;;        ;; Should test if this can be removed in the future.
-;;        (setq racer-rust-src-path
-;;              (concat (string-trim
-;;                       (shell-command-to-string "rustc --print sysroot"))
-;;                      "/lib/rustlib/src/rust/library"))
-;;        (add-hook 'rust-mode-hook #'racer-mode)
-;;        (add-hook 'racer-mode-hook #'eldoc-mode))))
-
-;; (when (can-use 'company)
-;;     (eval-after-load 'rust-mode
-;;       `(progn
-;;          (add-hook 'racer-mode-hook #'company-mode)
-;;          (define-key rust-mode-map (kbd "TAB")
-;;            #'company-indent-or-complete-common)
-;;          (setq company-tooltip-align-annotations t))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      Misc Language Installs         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(mapcar 'can-use '(groovy-mode cmake-mode))
+(use-package groovy-mode
+  :mode "\\.groovy$"
+  :magic ("#!groovy"))
+
+(use-package cmake-mode
+  :mode ("CMakeLists.txt" "\\.cmake$"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     screeps customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Look for the upload script relative to the source directory
+;; instead of hard-coding a location.
 (make-subprocess-command upload-screeps-code "~/screeps/upload.py")
 
-(eval-after-load 'javascript-mode
-  `(define-key js-mode-map (kbd "C-c C-c") 'upload-screeps-code))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;         tvm customizations          ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;; Add TVM-specific langage server
-;; sudo pip3 install ffi-navigator
-
-(when (can-use 'lsp-mode)
-  ;; TODO: Run the check for ffi-navigator asynchronously
-  (when (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil))
-    (lsp-register-client
-     (make-lsp-client
-      :new-connection (lsp-stdio-connection '("python3" "-m" "ffi_navigator.langserver"))
-      :major-modes '(python-mode c++-mode)
-      :server-id 'ffi-navigator
-      :add-on? t))
-    )
-  )
+(use-package javascript-mode
+  :ensure nil
+  :bind (:map
+         js-mode-map
+         ("C-c C-c" . upload-screeps-code)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
