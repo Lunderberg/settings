@@ -169,6 +169,7 @@
 ;; Kill/yank go to the system's clipboard.  Requires xclip to be
 ;; installed.
 (use-package xclip
+  :ensure t
   :config
   (xclip-mode))
 
