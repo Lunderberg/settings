@@ -603,14 +603,19 @@
 ;; CMakeLists.txt, or compile with `cmake
 ;; -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..`
 
+;; Or, in CMakeLists.txt
 ;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 ;; # Also needed for cmake<3.18.0 (https://gitlab.kitware.com/cmake/cmake/-/issues/16588)
 ;; set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+
+;; Or, with cmake>=3.17, can set environment variable
+;; export CMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 ;; Ubuntu 20.04's apt has clangd 10.0, which doesn't look in build
 ;; subdir for compile_commands.json.  Can symlink to
 ;; build/compile_commands.json, but I'm lazy so I download clangd 13.0
 ;; in the settings/install.py
+
 
 
 ;; TODO: Better find-file, should look up relative to a .git
