@@ -297,11 +297,10 @@
 ;;;      git customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Uncomment this
-;; (use-package magit
-;;   :commands (magit-status)
-;;   :bind (("C-c C-g" . magit-status))
-;;   )
+(use-package magit
+  :commands (magit-status)
+  :bind (("C-c C-g" . magit-status))
+  )
 
 (use-package github-link
   :load-path "misc"
@@ -985,6 +984,8 @@
   :ensure nil
   :bind (:map
          js-mode-map
+         ;; TODO: Only make this keybinding if I'm in the screeps
+         ;; directory.
          ("C-c C-c" . upload-screeps-code)))
 
 
