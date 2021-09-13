@@ -6,9 +6,10 @@
 [push]
 	default = simple
 
+[submodule]
+	recurse = true
+
 # Include at the end so it overrides any other settings.
 # Currently used for work name/email on work account.
 [include]
         path = ~/.gitconfig_local
-[submodule]
-	recurse = true
