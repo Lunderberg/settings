@@ -812,11 +812,20 @@
   :bind (:map python-mode-map
               ("C-c C-c" . execute-current-buffer))
   :config
-  ;; electric-indent-mode does the complete wrong thing in many cases
-  ;; in python.  When typing a colon, it re-indents the current line,
-  ;; even if I have already set the desired indentation.
+
   (add-hook 'python-mode-hook
-            '(lambda () (electric-indent-local-mode -1)))
+            '(lambda ()
+               ;; electric-indent-mode does the complete wrong thing
+               ;; in many cases in python.  When typing a colon, it
+               ;; re-indents the current line, even if I have already
+               ;; set the desired indentation.
+               (electric-indent-local-mode -1)
+
+               ;; In cases where a snippet contains multiple
+               ;; syntactically allowed indents, the default 'auto
+               ;; will add extra indentation compared to the snippet.
+               (set (make-local-variable 'yas-indent-line) 'fixed)
+               ))
   )
 
 (use-package blacken
