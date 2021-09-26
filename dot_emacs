@@ -981,6 +981,9 @@
 (use-package cmake-mode
   :mode ("CMakeLists.txt" "\\.cmake$"))
 
+(use-package dockerfile-mode
+  :mode ("Dockerfile*"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     screeps customizations          ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
