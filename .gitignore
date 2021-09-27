@@ -11,6 +11,9 @@ dot_emacs.d/.emacs.desktop
 dot_emacs.d/.emacs.desktop.lock
 dot_emacs.d/custom.el
 dot_emacs.d/.lsp-session-v1
+dot_emacs.d/transient
+dot_emacs.d/request
+dot_emacs.d/emojis
 
 bin/clangd
 bin/clangd_12.0.0
