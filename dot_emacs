@@ -810,7 +810,9 @@
   :mode ("SConstruct" "SConscript")
   :magic ("#!/usr/bin/env python")
   :bind (:map python-mode-map
-              ("C-c C-c" . execute-current-buffer))
+              ("C-c C-c" . execute-current-buffer)
+              ("C-c C-d" . nil)
+              )
   :config
 
   (add-hook 'python-mode-hook
