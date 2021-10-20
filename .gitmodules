@@ -1,3 +1,6 @@
 [submodule "tvm-gdb-extension"]
 	path = tvm-gdb-extension
 	url = https://github.com/Lunderberg/tvm-gdb-extension
+[submodule "external/single-site-browser"]
+	path = external/single-site-browser
+	url = git@github.com:Lunderberg/single-site-browser
