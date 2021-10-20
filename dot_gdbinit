@@ -7,4 +7,4 @@ set history filename ~/.gdb_history
 # into C++.  Requires a debug version of python to be installed
 # (e.g. sudo apt install python3.8-dbg)
 #set auto-load python-scripts on
-source ~/settings/tvm-gdb-extension/tvm_packedfunc_filter.py
+source ~/settings/external/tvm-gdb-extension/tvm_packedfunc_filter.py
