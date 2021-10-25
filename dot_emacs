@@ -297,6 +297,8 @@
 ;;;      git customizations            ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Saved configurations for magit's transient popups are in
+;; ~/.emacs.d/transient/values.el
 (use-package magit
   :commands (magit-status)
   :bind (("C-c C-g" . magit-status))
