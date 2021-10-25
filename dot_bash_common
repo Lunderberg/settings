@@ -66,18 +66,10 @@ alias grab_ensure_venv='wget --no-cache https://raw.githubusercontent.com/Lunder
 export LESS="--no-init --quit-if-one-screen --raw-control-chars"
 alias more="less"
 
-alias root='root -l'
 alias grep='grep --color=auto'
-alias py2='ipython'
-alias py3='ipython3'
-alias py='ipython3'
-alias pyx2='xterm -e ipython &'
-alias pyx3='xterm -e ipython3 &'
-alias pyx='xterm -e ipython3 &'
-alias lynx='lynx --accept-all-cookies'
+alias py='python3 -mIPython'
 alias ssh='ssh -Y'
 #alias scons='scons -U'
-alias hamres='hamachi logoff; sleep 5; hamachi logon'
 alias psgrep='ps aux | grep'
 
 alias cd..="cd .."
