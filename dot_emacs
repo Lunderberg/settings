@@ -527,6 +527,10 @@
   :config
   (setq compilation-scroll-output 'first-error)
   (setq compilation-exit-message-function 'compilation-exit-autoclose)
+  ;; Files to ignore in *compilation* buffer.  CMake prints errors in
+  ;; the GNU style, but relative to the build directory.
+  (dolist (ignore '("CMakeFiles/.*/build.make" "CMakeFiles/Makefile2" "Makefile"))
+    (add-to-list 'compilation-transform-file-match-alist (cons ignore nil)))
   :hook (compilation-filter . colorize-compilation-buffer)
   )
 
