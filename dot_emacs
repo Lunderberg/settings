@@ -182,11 +182,21 @@
          (display (shell-command-to-string command)))
     (setenv "DISPLAY" display)))
 
-;; Make hidden backup files .FILE~ instead of FILE~
-(defun make-backup-file-name (filename)
-  (expand-file-name
-   (concat "." (file-name-nondirectory filename) "~")
-   (file-name-directory filename)))
+;; Keep all backup files, auto-save files and lock-files inside the
+;; ~/.emacs.d directory.  I tried having these be hidden files within
+;; the current directory, but it can cause issues with backup files
+;; being accidentally committed, or lock-files being caught in *.cc
+;; globs in cmake.  Better to just have them all in a separate
+;; location.
+(setq backup-directory-alist `(("." . ,(concat user-emacs-directory "backup-files"))))
+(let ((my-auto-save-dir (locate-user-emacs-file "auto-save-files/")))
+  (setq auto-save-file-name-transforms `((".*" ,my-auto-save-dir t)))
+  (unless (file-exists-p my-auto-save-dir)
+    (make-directory my-auto-save-dir)))
+(let ((my-lock-dir (locate-user-emacs-file "lock-files/")))
+  (setq lock-file-name-transforms `((".*" ,my-lock-dir t)))
+  (unless (file-exists-p my-lock-dir)
+    (make-directory my-lock-dir)))
 
 ;; Before saving, make the directory if it doesn't exist.
 (defun make-current-directory ()
