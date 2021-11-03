@@ -1027,6 +1027,17 @@
          ;; directory.
          ("C-c C-c" . upload-screeps-code)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;     projectile customizations       ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Projectile to find all project-specific files, helm to use a nicer
+;; fuzzy search.
+(use-package helm-projectile
+    :ensure t
+    :commands (helm-projectile-find-file)
+    :bind ("C-c p f" . helm-projectile-find-file))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    end of human-written section     ;;;

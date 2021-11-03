@@ -14,6 +14,8 @@ dot_emacs.d/.lsp-session-v1
 dot_emacs.d/transient
 dot_emacs.d/request
 dot_emacs.d/emojis
+dot_emacs.d/projects
+dot_emacs.d/projectile-bookmarks.eld
 
 bin/clangd
 bin/clangd_12.0.0
