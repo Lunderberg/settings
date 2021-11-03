@@ -496,6 +496,15 @@
   (cond ((string-match "\\(GNUm\\|M\\|m\\)akefile" filename) "make")
         ((equal filename "SConstruct") "scons")))
 
+;; TODO: Add defcustom variables for the number of threads to use,
+;; defaulting to 1 (slow) and some proportion of the total threads on
+;; the machine (fast).
+
+;; TODO: Add defcustom variable for additional options being passed
+;; (e.g. --keep-going).
+
+;; TODO: Search for the makefile once, then set compile-command to a
+;; buffer-local variable with the result, and compilation-read-command
 (defun find-makefile-compile-impl (clean threads)
   (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name)
                                       "^\\(\\(GNUm\\|M\\|m\\)akefile$\\)\\|\\(SConstruct$\\)")))
