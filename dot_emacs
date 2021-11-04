@@ -22,6 +22,10 @@
 
 (package-initialize)
 
+;; Workaround for emacs<26.3
+;; https://emacs.stackexchange.com/a/58434/14780
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+
 ;; Init the list of package.  Only needs to be done once per
 ;; installation, but otherwise package-install will complain.
 (unless package-archive-contents
