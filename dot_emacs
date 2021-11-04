@@ -323,6 +323,13 @@
   :commands (github-link)
   :bind (("C-c g" . github-link)))
 
+;; vc-git-root isn't marked as autoload, and I need it for my ibuffer
+;; setup.
+(use-package vc-git
+  :ensure nil
+  :commands (vc-git-root)
+  )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;     ibuffer customizations         ;;;
