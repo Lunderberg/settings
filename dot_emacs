@@ -310,8 +310,13 @@
 ;; Saved configurations for magit's transient popups are in
 ;; ~/.emacs.d/transient/values.el
 (use-package magit
-  :commands (magit-status)
-  :bind (("C-c C-g" . magit-status))
+  :commands (magit-status magit-dispatch magit-file-dispatch)
+  :bind (("C-c C-g" . magit-status)
+         ("C-x M-g" . magit-dispatch)
+         ("C-c M-g" . magit-file-dispatch)
+         )
+  :config
+  (setq magit-define-global-key-bindings nil)
   )
 
 (use-package github-link
