@@ -340,7 +340,8 @@
         ))
 
 (setq my-ibuffer-groups-bottom
-      '(("emacs" (name . "^\\*.*\\*$"))
+      '(("slack" (name . "^\\*Slack "))
+        ("emacs" (name . "^\\*.*\\*$"))
 	("dired" (mode . dired-mode))
         ))
 
@@ -1042,6 +1043,40 @@
     :ensure t
     :commands (helm-projectile-find-file)
     :bind ("C-c p f" . helm-projectile-find-file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;      slack customizations           ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(use-package slack
+  :ensure nil
+  ;; Need https://github.com/yuya373/emacs-slack/pull/552
+  :load-path "~/misc/emacs-slack"
+  :commands (slack-start)
+  :init
+  (setq slack-buffer-emojify t) ;; if you want to enable emoji, default nil
+  (setq slack-prefer-current-team t)
+  (setq slack-thread-also-send-to-room nil)
+  :config
+  (slack-register-team
+   :name "OctoML"
+   :default t
+   ;; Token from TS.boot_data.api_token in app.slack.com.
+   :token (auth-source-pick-first-password
+           :host "octoml.slack.com"
+           :user "Lunderberg^token")
+   ;; Cookie is "d" cookie from Slack HTTP request.  Must be percent-encoded.
+   :cookie (auth-source-pick-first-password
+            :host "octoml.slack.com"
+            :user "Lunderberg^cookie")
+   :subscribed-channels '(random)
+   :full-and-display-names t)
+  )
+
+(use-package alert
+  :commands (alert)
+  :init
+  (setq alert-default-style 'notifier))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
