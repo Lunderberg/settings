@@ -1,7 +1,12 @@
+# -*- sh -*-
+
 # Enable history saving, increase size above the default 256 lines.
 set history save on
 set history size 10000
 set history filename ~/.gdb_history
+
+# Increase truncation limit for large prints (0 for unlimited)
+set print elements 10000
 
 # Automatically load python support when debugging python that call
 # into C++.  Requires a debug version of python to be installed
