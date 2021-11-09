@@ -13,3 +13,9 @@ set print elements 10000
 # (e.g. sudo apt install python3.8-dbg)
 #set auto-load python-scripts on
 source ~/settings/external/tvm-gdb-extension/tvm_packedfunc_filter.py
+source ~/settings/external/tvm-gdb-extension/tvm_pretty_print.py
+
+# Break on TVM error
+set breakpoint pending on
+break ::tvm::runtime::detail::LogFatal::LogFatal
+set breakpoint pending auto
