@@ -16,6 +16,11 @@ for ruby_dir in ~/.gem/ruby/*; do
     export PATH=$PATH:"${ruby_dir}/bin"
 done
 
+# Add rust compiler to PATH
+if [[ -e ~/.cargo/env ]]; then
+    source ~/.cargo/env
+fi
+
 export PYTHONPATH=$PYTHONPATH:$SCRIPT_DIR/pylib
 export XENVIRONMENT=~/.Xresources
 
