@@ -21,24 +21,6 @@ def path(*args):
     return os.path.expanduser(os.path.expandvars(os.path.join(*args)))
 
 
-# Because windows is absurd and has no easy way to make symlinks.
-# This also requires the script to be run as admin, since symlinks are restricted to admins
-# How was that ever a good idea?
-def symlink(source, link_name):
-    os_symlink = getattr(os, "symlink", None)
-    if callable(os_symlink):
-        os_symlink(source, link_name)
-    else:
-        import ctypes
-
-        csl = ctypes.windll.kernel32.CreateSymbolicLinkW
-        csl.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32)
-        csl.restype = ctypes.c_ubyte
-        flags = 1 if os.path.isdir(source) else 0
-        if csl(link_name, source, flags) == 0:
-            raise ctypes.WinError()
-
-
 def link(source, dest):
     source = os.path.join(fold, source)
     dest = path(dest)
@@ -47,7 +29,7 @@ def link(source, dest):
     else:
         if os.path.lexists(dest):
             os.remove(dest)
-        symlink(source, dest)
+        os.symlink(source, dest)
         print("{0} linked to {1}".format(dest, source))
 
 
