@@ -1,13 +1,25 @@
 # -*-Sh-*-
 
-export PYTHONPATH=$PYTHONPATH:~/pylib
-DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
-export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
-export XENVIRONMENT=~/.Xresources
+# PATH updates
+SCRIPT_DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
+export PATH=$SCRIPT_DIR/bin:$PATH
+export PATH=.:~/.local/bin:~/bin:$PATH
 
-if ls /opt | grep emacs > /dev/null; then
+# Local installation of emacs, if one exists.
+if ls /opt | grep -q emacs; then
    export PATH=$PATH:$(ls -d /opt/emacs-*/bin)
 fi
+
+# Add any ruby bin directories (e.g. for jekyll)
+for ruby_dir in ~/.gem/ruby/*; do
+    [[ -e "${ruby_dir}" ]] || continue
+    export PATH=$PATH:"${ruby_dir}/bin"
+done
+
+export PYTHONPATH=$PYTHONPATH:$SCRIPT_DIR/pylib
+export XENVIRONMENT=~/.Xresources
+
+
 
 if [ "$TERM" != "dumb" ]; then
     if [ -n "$TMUX" ]; then
