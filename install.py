@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 
 from glob import glob
-import inspect
 import io
 import os
-import pkgutil
-import platform
-import shutil
 import subprocess
 import sys
-import tarfile
 import urllib.request
 import zipfile
 
 fold = os.path.abspath(os.path.dirname(sys.argv[0]))
-system = platform.system()
 
 
 def path(*args):
@@ -33,32 +27,9 @@ def link(source, dest):
         print("{0} linked to {1}".format(dest, source))
 
 
-def link_all_ipython():
-    ipython_dir = path("~", ".ipython", "profile_default", "startup")
-    if not os.path.exists(ipython_dir):
-        os.makedirs(ipython_dir)
-
-    for startup_file in glob(os.path.join("ipython_startup", "*.py")):
-        script_name = os.path.basename(startup_file)
-        link(startup_file, os.path.join(ipython_dir, script_name))
-
-
-git_bin = "git" if system == "Linux" else "c:/Program Files (x86)/Git/bin/git.exe"
-
-
-def clone_git(url, outputDir):
-    name = url[url.rfind("/") + 1 : url.rfind(".")]
-    outputDir = os.path.join(path(outputDir), name)
-    if os.path.exists(outputDir):
-        print("{} exists, skipping".format(outputDir))
-        return
-    subprocess.call([git_bin, "clone", "--recursive", url, outputDir])
-    print("Installed {}".format(outputDir))
-
-
 def git_submodule_update():
     subprocess.call(
-        [git_bin, "submodule", "update", "--init", "--recursive"],
+        ["git", "submodule", "update", "--init", "--recursive"],
         cwd=os.path.dirname(__file__),
     )
 
@@ -83,29 +54,9 @@ def download_clangd():
     os.symlink(relpath, clangd_symlink)
 
 
-def add_bash_common():
-    bashrc_path = os.path.expanduser("~/.bashrc")
-    current_bashrc = open(bashrc_path).read()
-    if ".bash_common" in current_bashrc:
-        print(".bashrc already calls .bash_common, skipping")
-    else:
-        print("Adding .bash_common to .bashrc")
-        bashrc = current_bashrc + inspect.cleandoc(
-            """
-        if [ -f ~/.bash_common ]; then . ~/.bash_common; fi
-        """
-        )
-        with open(bashrc_path, "w") as f:
-            f.write(bashrc)
-
-
-dot_emacs_path = "~" if system == "Linux" else path("~", "AppData", "Roaming")
-emacs_dir = path(dot_emacs_path, ".emacs.d")
-dot_emacs = path(dot_emacs_path, ".emacs")
-
-git_submodule_update()
-
-if system == "Linux":
+def install_dotfiles():
+    link("dot_emacs", "~/.emacs")
+    link("dot_emacs.d", "~/.emacs.d")
     link("dot_bash_common", "~/.bash_common")
     link("dot_screenrc", "~/.screenrc")
     link("dot_dir_colors", "~/.dir_colors")
@@ -114,10 +65,40 @@ if system == "Linux":
     link("dot_Xdefaults", "~/.Xdefaults")
     link("dot_Xdefaults", "~/.Xresources")
     link("dot_gdbinit", "~/.gdbinit")
-    link_all_ipython()
-    add_bash_common()
+
+
+def install_ipython_env():
+    ipython_dir = path("~", ".ipython", "profile_default", "startup")
+    if not os.path.exists(ipython_dir):
+        os.makedirs(ipython_dir)
+
+    for startup_file in glob(os.path.join("ipython_startup", "*.py")):
+        script_name = os.path.basename(startup_file)
+        link(startup_file, os.path.join(ipython_dir, script_name))
+
+
+def update_bashrc():
+    bashrc_path = os.path.expanduser("~/.bashrc")
+    orig_bashrc = open(bashrc_path).read()
+    bashrc = orig_bashrc
+    if ".bash_common" not in bashrc:
+        print("Adding .bash_common to .bashrc")
+        bashrc += "if [ -f ~/.bash_common ]; then . ~/.bash_common; fi\n"
+
+    if bashrc != orig_bashrc:
+        with open(bashrc_path, "w") as f:
+            f.write(bashrc)
+
+
+def main():
+    git_submodule_update()
     download_clangd()
 
-link("pylib", "~/pylib")
-link("dot_emacs", dot_emacs)
-link("dot_emacs.d", emacs_dir)
+    install_dotfiles()
+    install_ipython_env()
+
+    update_bashrc()
+
+
+if __name__ == "__main__":
+    main()
