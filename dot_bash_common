@@ -40,25 +40,16 @@ fi
 export PS1="\[\e[${USER_COLOR}m\]\u\[\e[1;32m\]@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
 export HISTFILESIZE=10000
-#export PROMPT_COMMAND="history 1 | record_command.py -p"
 
-# #Make handling the DISPLAY variable a bit easier with screen.
-# if ps -ocommand= -p $PPID | grep --quiet SCREEN; then
-#     source ~/.DISPLAY.sh
-# else
-#     alias screen="echo 'export DISPLAY=$DISPLAY' > ~/.DISPLAY.sh; screen"
-# fi
-# alias dis='source ~/.DISPLAY.sh'
-
-#Same thing, but for tmux.  Much more pleasant to work with.
+#Make handling the DISPLAY variable a bit easier with tmux.  This will
+#update the current shell to have the same DISPLAY variable as the
+#most recent attachment to tmux.
 alias dis='export $(tmux showenv | grep DISPLAY)'
 
 alias tm='tmux new-session -A -s0'
 
 eval $(dircolors ~/.dir_colors)
 
-#alias emacs="emacs -nw"
-#alias es="emacs --daemon"
 alias ec="emacsclient -a '' -c"
 alias en="emacsclient -a '' -n"
 export EDITOR="emacsclient -a '' -c -nw"
@@ -68,7 +59,6 @@ alias cp='cp -i'
 alias mv='mv -i'
 alias ls='ls --color=auto'
 alias ll='ls -lh'
-alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./.snapshot"'
 
 alias grab_sconstruct='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
@@ -81,8 +71,6 @@ alias more="less"
 alias grep='grep --color=auto'
 alias py='python3 -mIPython'
 alias ssh='ssh -Y'
-#alias scons='scons -U'
-alias psgrep='ps aux | grep'
 
 alias cd..="cd .."
 
