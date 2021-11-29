@@ -81,27 +81,6 @@ def git_submodule_update():
     )
 
 
-installed_pypackages = [name for _, name, _ in pkgutil.iter_modules()]
-
-
-def installPyPackage(tarball):
-    tarpath, filename = os.path.split(tarball)
-    for name in installed_pypackages:
-        if name in filename:
-            print("{} installed already, skipping".format(name))
-            return
-    tar = tarfile.open(tarball, "r:gz")
-    instpath = path(tarpath, tar.firstmember.name)
-    tar.extractall(tarpath)
-    subprocess.call(
-        ["python", "setup.py", "install", "--user"],
-        cwd=instpath,
-        stdout=open(os.devnull, "wb"),
-    )
-    shutil.rmtree(instpath)
-    print("Installed {0}".format(instpath))
-
-
 def download_clangd():
     clangd_symlink = os.path.join(os.path.dirname(__file__), "bin", "clangd")
     clangd_loc = os.path.join(
@@ -160,8 +139,3 @@ if system == "Linux":
 link("pylib", "~/pylib")
 link("dot_emacs", dot_emacs)
 link("dot_emacs.d", emacs_dir)
-
-# Not needed so much now that the lab has pip installed.
-# for tarball in sorted(glob(path('pypackages','*.tar.gz'))+
-#                       glob(path('pypackages','*.tgz'))):
-#     installPyPackage(tarball)
