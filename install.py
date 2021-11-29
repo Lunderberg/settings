@@ -1,45 +1,82 @@
 #!/usr/bin/env python3
 
+import argparse
 from glob import glob
 import io
 import os
+import pathlib
 import subprocess
 import sys
 import urllib.request
 import zipfile
 
-fold = os.path.abspath(os.path.dirname(sys.argv[0]))
+
+def apply_monkey_patches():
+    def is_relative_to(path, potential_parent):
+        return potential_parent in path.parents
+
+    def readlink(path):
+        return pathlib.Path(os.readlink(path))
+
+    pathlib.Path.lexists = os.path.lexists
+
+    # Patched is_relaitve_to applies prior to python 3.9
+    if not hasattr(pathlib.Path, "is_relative_to"):
+        pathlib.Path.is_relative_to = is_relative_to
+
+    # Patched readlink applies prior to python 3.9
+    if not hasattr(pathlib.Path, "readlink"):
+        pathlib.Path.readlink = readlink
 
 
-def path(*args):
-    return os.path.expanduser(os.path.expandvars(os.path.join(*args)))
+def repo_path(*args):
+    path = pathlib.Path(*args)
+
+    script_dir = pathlib.Path(__file__).parent.resolve()
+    if not path.is_relative_to(script_dir):
+        path = script_dir / path
+
+    return path
 
 
-def link(source, dest):
-    source = os.path.join(fold, source)
-    dest = path(dest)
-    if os.path.exists(dest):
-        print("{0} exists, not overwriting".format(dest))
+def sys_path(*args):
+    path = pathlib.Path(*args).expanduser()
+    assert path.is_absolute(), "Install location must be absolute path."
+    return path
+
+
+def install(repo_file, sys_file):
+    repo_file = repo_path(repo_file)
+    sys_file = sys_path(sys_file)
+
+    if sys_file.lexists():
+        assert sys_file.is_symlink(), f"{sys_file} already exists"
+        assert sys_file.exists(), f"{sys_file} is a broken symlink"
+        assert (
+            sys_file.resolve() == repo_file
+        ), f"{sys_file} points to {sys_file.resolve()}, not to {repo_file}"
+
     else:
-        if os.path.lexists(dest):
-            os.remove(dest)
-        os.symlink(source, dest)
-        print("{0} linked to {1}".format(dest, source))
+        sys_file.symlink_to(repo_file)
+        print("{0} linked to {1}".format(sys_file, repo_file))
 
 
 def git_submodule_update():
-    subprocess.call(
+    subprocess.check_call(
         ["git", "submodule", "update", "--init", "--recursive"],
-        cwd=os.path.dirname(__file__),
+        cwd=pathlib.Path(__file__).parent,
     )
 
 
 def download_clangd():
-    clangd_symlink = os.path.join(os.path.dirname(__file__), "bin", "clangd")
-    clangd_loc = os.path.join(
-        os.path.dirname(__file__), "bin", "clangd_12.0.0", "bin", "clangd"
-    )
-    if os.path.exists(clangd_symlink):
+    clangd_symlink = repo_path("bin", "clangd")
+    clangd_loc = repo_path("bin", "clangd_12.0.0", "bin", "clangd")
+    if clangd_symlink.lexists():
+        assert clangd_symlink.is_symlink(), f"{clangd_symlink} already exists"
+        assert clangd_symlink.exists(), f"{clangd_symlink} is a broken symlink"
+        assert (
+            clangd_symlink.resolve() == clangd_loc
+        ), f"{clangd_symlink} points to {clangd_symlink.resolve()}, expected {clangd_loc}"
         return
 
     url = "https://github.com/clangd/clangd/releases/download/12.0.0/clangd-linux-12.0.0.zip"
@@ -47,38 +84,39 @@ def download_clangd():
     contents = io.BytesIO(response.read())
     zipped = zipfile.ZipFile(contents)
 
-    zipped.extractall(os.path.dirname(clangd_symlink))
-    os.chmod(clangd_loc, 0o554)
+    zipped.extractall(clangd_symlink.parent)
+    clangd_loc.chmod(0o554)
 
-    relpath = os.path.relpath(clangd_loc, os.path.dirname(clangd_symlink))
-    os.symlink(relpath, clangd_symlink)
+    relpath = clangd_loc.relative_to(clangd_symlink.parent)
+    clangd_symlink.symlink_to(relpath)
 
 
 def install_dotfiles():
-    link("dot_emacs", "~/.emacs")
-    link("dot_emacs.d", "~/.emacs.d")
-    link("dot_bash_common", "~/.bash_common")
-    link("dot_screenrc", "~/.screenrc")
-    link("dot_dir_colors", "~/.dir_colors")
-    link("dot_tmux.conf", "~/.tmux.conf")
-    link("dot_gitconfig", "~/.gitconfig")
-    link("dot_Xdefaults", "~/.Xdefaults")
-    link("dot_Xdefaults", "~/.Xresources")
-    link("dot_gdbinit", "~/.gdbinit")
+    install("dot_emacs", "~/.emacs")
+    install("dot_emacs.d", "~/.emacs.d")
+    install("dot_bash_common", "~/.bash_common")
+    install("dot_screenrc", "~/.screenrc")
+    install("dot_dir_colors", "~/.dir_colors")
+    install("dot_tmux.conf", "~/.tmux.conf")
+    install("dot_gitconfig", "~/.gitconfig")
+    install("dot_Xdefaults", "~/.Xdefaults")
+    install("dot_Xdefaults", "~/.Xresources")
+    install("dot_gdbinit", "~/.gdbinit")
 
 
 def install_ipython_env():
-    ipython_dir = path("~", ".ipython", "profile_default", "startup")
-    if not os.path.exists(ipython_dir):
-        os.makedirs(ipython_dir)
+    ipython_repo = repo_path("ipython_startup")
+    ipython_sys = sys_path("~", ".ipython", "profile_default", "startup")
 
-    for startup_file in glob(os.path.join("ipython_startup", "*.py")):
-        script_name = os.path.basename(startup_file)
-        link(startup_file, os.path.join(ipython_dir, script_name))
+    ipython_sys.mkdir(parents=True, exist_ok=True)
+
+    for startup_file_repo in ipython_repo.glob("*.py"):
+        startup_file_sys = ipython_sys / startup_file_repo.name
+        install(startup_file_repo, startup_file_sys)
 
 
 def update_bashrc():
-    bashrc_path = os.path.expanduser("~/.bashrc")
+    bashrc_path = sys_path("~", ".bashrc")
     orig_bashrc = open(bashrc_path).read()
     bashrc = orig_bashrc
     if ".bash_common" not in bashrc:
@@ -90,7 +128,9 @@ def update_bashrc():
             f.write(bashrc)
 
 
-def main():
+def main(args):
+    apply_monkey_patches()
+
     git_submodule_update()
     download_clangd()
 
@@ -100,5 +140,26 @@ def main():
     update_bashrc()
 
 
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
 if __name__ == "__main__":
-    main()
+    arg_main()
