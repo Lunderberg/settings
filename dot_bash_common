@@ -133,11 +133,6 @@ function sleep_until() { # args [-q] <HH[:MM[:SS]]> [more days]
     sleep $slp
 }
 
-#Things not in the github repo
-if [ -f ~/.bash_private ]; then
-    source ~/.bash_private
-fi
-
 command_not_found_handle() {
     if [ -x /usr/lib/command-not-found ]; then
         /usr/lib/command-not-found -- "$1"
@@ -154,4 +149,14 @@ if which loginctl > /dev/null && loginctl >& /dev/null; then
         echo "This will break screen, tmux, emacs --daemon, nohup, etc"
         echo "Tell the sysadmin to set KillUserProcesses=no in /etc/systemd/login.conf"
     fi
+fi
+
+# Private environment variables stored in the settings-private.
+if [ -f ~/.bash_private ]; then
+    source ~/.bash_private
+fi
+
+# Host-specific setup
+if [ -f ~/.bash_local ]; then
+    source ~/.bash_local
 fi

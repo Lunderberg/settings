@@ -1,77 +1,31 @@
 #!/usr/bin/env python3
 
 import argparse
-from glob import glob
 import io
 import os
-import pathlib
 import subprocess
-import sys
 import urllib.request
 import zipfile
 
+from install_utils import Installer
 
-def apply_monkey_patches():
-    def is_relative_to(path, potential_parent):
-        return potential_parent in path.parents
-
-    def readlink(path):
-        return pathlib.Path(os.readlink(path))
-
-    pathlib.Path.lexists = os.path.lexists
-
-    # Patched is_relaitve_to applies prior to python 3.9
-    if not hasattr(pathlib.Path, "is_relative_to"):
-        pathlib.Path.is_relative_to = is_relative_to
-
-    # Patched readlink applies prior to python 3.9
-    if not hasattr(pathlib.Path, "readlink"):
-        pathlib.Path.readlink = readlink
-
-
-def repo_path(*args):
-    path = pathlib.Path(*args)
-
-    script_dir = pathlib.Path(__file__).parent.resolve()
-    if not path.is_relative_to(script_dir):
-        path = script_dir / path
-
-    return path
-
-
-def sys_path(*args):
-    path = pathlib.Path(*args).expanduser()
-    assert path.is_absolute(), "Install location must be absolute path."
-    return path
-
-
-def install(repo_file, sys_file):
-    repo_file = repo_path(repo_file)
-    sys_file = sys_path(sys_file)
-
-    if sys_file.lexists():
-        assert sys_file.is_symlink(), f"{sys_file} already exists"
-        assert sys_file.exists(), f"{sys_file} is a broken symlink"
-        assert (
-            sys_file.resolve() == repo_file
-        ), f"{sys_file} points to {sys_file.resolve()}, not to {repo_file}"
-
-    else:
-        sys_file.symlink_to(repo_file)
-        print("{0} linked to {1}".format(sys_file, repo_file))
+installer = Installer(__file__)
+install = installer.install
+repo_path = installer.repo_path
+sys_path = installer.sys_path
 
 
 def git_submodule_update():
     subprocess.check_call(
         ["git", "submodule", "update", "--init", "--recursive"],
-        cwd=pathlib.Path(__file__).parent,
+        cwd=repo_path(),
     )
 
 
 def download_clangd():
     clangd_symlink = repo_path("bin", "clangd")
     clangd_loc = repo_path("bin", "clangd_12.0.0", "bin", "clangd")
-    if clangd_symlink.lexists():
+    if os.path.lexists(clangd_symlink):
         assert clangd_symlink.is_symlink(), f"{clangd_symlink} already exists"
         assert clangd_symlink.exists(), f"{clangd_symlink} is a broken symlink"
         assert (
@@ -128,9 +82,13 @@ def update_bashrc():
             f.write(bashrc)
 
 
-def main(args):
-    apply_monkey_patches()
+def run_private_install():
+    private_script = repo_path("external", "settings-private", "install.py")
+    if private_script.exists():
+        subprocess.check_call([private_script])
 
+
+def main(args):
     git_submodule_update()
     download_clangd()
 
@@ -138,6 +96,8 @@ def main(args):
     install_ipython_env()
 
     update_bashrc()
+
+    run_private_install()
 
 
 def arg_main():
