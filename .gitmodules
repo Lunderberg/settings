@@ -4,3 +4,6 @@
 [submodule "external/single-site-browser"]
 	path = external/single-site-browser
 	url = git@github.com:Lunderberg/single-site-browser
+[submodule "external/settings-private"]
+	path = external/settings-private
+	url = git@github.com:Lunderberg/settings-private

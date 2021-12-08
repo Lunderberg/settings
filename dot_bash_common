@@ -1,13 +1,35 @@
 # -*-Sh-*-
 
-export PYTHONPATH=$PYTHONPATH:~/pylib
-DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
-export PATH=$DIR/bin:.:~/.local/bin:~/bin:$PATH
-export XENVIRONMENT=~/.Xresources
+# PATH updates
+SCRIPT_DIR=$(dirname $(readlink -e ${BASH_SOURCE[0]}))
+export PATH=$SCRIPT_DIR/bin:$PATH
+export PATH=.:~/.local/bin:~/bin:$PATH
 
-if ls /opt | grep emacs > /dev/null; then
+# Local installation of emacs, if one exists.
+if ls /opt | grep -q emacs; then
    export PATH=$PATH:$(ls -d /opt/emacs-*/bin)
 fi
+
+# Add any ruby bin directories (e.g. for jekyll)
+for ruby_dir in ~/.gem/ruby/*; do
+    [[ -e "${ruby_dir}" ]] || continue
+    export PATH=$PATH:"${ruby_dir}/bin"
+done
+
+# Add rust compiler to PATH
+if [[ -e ~/.cargo/env ]]; then
+    source ~/.cargo/env
+fi
+
+export PYTHONPATH=$PYTHONPATH:$SCRIPT_DIR/pylib
+export XENVIRONMENT=~/.Xresources
+
+
+# Prevent pip popup unnecessarily asking to unlock the "kdewallet"
+# keyring.
+#
+# https://github.com/pypa/pip/issues/8090#issuecomment-803363268
+export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 
 if [ "$TERM" != "dumb" ]; then
     if [ -n "$TMUX" ]; then
@@ -28,25 +50,16 @@ fi
 export PS1="\[\e[${USER_COLOR}m\]\u\[\e[1;32m\]@\[\e[${SERVER_COLOR}m\]\h\[\e[1;34m\] \w \$\[\e[m\] "
 
 export HISTFILESIZE=10000
-#export PROMPT_COMMAND="history 1 | record_command.py -p"
 
-# #Make handling the DISPLAY variable a bit easier with screen.
-# if ps -ocommand= -p $PPID | grep --quiet SCREEN; then
-#     source ~/.DISPLAY.sh
-# else
-#     alias screen="echo 'export DISPLAY=$DISPLAY' > ~/.DISPLAY.sh; screen"
-# fi
-# alias dis='source ~/.DISPLAY.sh'
-
-#Same thing, but for tmux.  Much more pleasant to work with.
+#Make handling the DISPLAY variable a bit easier with tmux.  This will
+#update the current shell to have the same DISPLAY variable as the
+#most recent attachment to tmux.
 alias dis='export $(tmux showenv | grep DISPLAY)'
 
 alias tm='tmux new-session -A -s0'
 
 eval $(dircolors ~/.dir_colors)
 
-#alias emacs="emacs -nw"
-#alias es="emacs --daemon"
 alias ec="emacsclient -a '' -c"
 alias en="emacsclient -a '' -n"
 export EDITOR="emacsclient -a '' -c -nw"
@@ -56,7 +69,6 @@ alias cp='cp -i'
 alias mv='mv -i'
 alias ls='ls --color=auto'
 alias ll='ls -lh'
-alias lll='ll -a'
 alias duh='du -d 1 -h --exclude "./.snapshot"'
 
 alias grab_sconstruct='wget --no-cache https://raw.githubusercontent.com/Lunderberg/magic_cpp_makefile/master/SConstruct'
@@ -69,8 +81,6 @@ alias more="less"
 alias grep='grep --color=auto'
 alias py='python3 -mIPython'
 alias ssh='ssh -Y'
-#alias scons='scons -U'
-alias psgrep='ps aux | grep'
 
 alias cd..="cd .."
 
@@ -123,11 +133,6 @@ function sleep_until() { # args [-q] <HH[:MM[:SS]]> [more days]
     sleep $slp
 }
 
-#Things not in the github repo
-if [ -f ~/.bash_private ]; then
-    source ~/.bash_private
-fi
-
 command_not_found_handle() {
     if [ -x /usr/lib/command-not-found ]; then
         /usr/lib/command-not-found -- "$1"
@@ -144,4 +149,14 @@ if which loginctl > /dev/null && loginctl >& /dev/null; then
         echo "This will break screen, tmux, emacs --daemon, nohup, etc"
         echo "Tell the sysadmin to set KillUserProcesses=no in /etc/systemd/login.conf"
     fi
+fi
+
+# Private environment variables stored in the settings-private.
+if [ -f ~/.bash_private ]; then
+    source ~/.bash_private
+fi
+
+# Host-specific setup
+if [ -f ~/.bash_local ]; then
+    source ~/.bash_local
 fi

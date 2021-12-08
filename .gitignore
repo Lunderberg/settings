@@ -16,6 +16,9 @@ dot_emacs.d/request
 dot_emacs.d/emojis
 dot_emacs.d/projects
 dot_emacs.d/projectile-bookmarks.eld
+dot_emacs.d/auto-save-files
+dot_emacs.d/lock-files
+dot_emacs.d/backup-files
 
 bin/clangd
 bin/clangd_12.0.0
