@@ -182,7 +182,7 @@
 ;; GUI, because GUI emacsclient updates the DISPLAY on its own.
 (defun update-display-variable ()
   (interactive)
-  (let* ((command "tmux showenv | grep DISPLAY | cut -d = -f 2")
+  (let* ((command "tmux showenv | grep DISPLAY | cut -d = -f 2 | tr -d '\\n'")
          (display (shell-command-to-string command)))
     (setenv "DISPLAY" display)))
 
