@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+
+import argparse
+import inspect
+import subprocess
+import os
+import socket
+
+
+def get_ssh_hostname(host):
+    # Need to suppress the stderr, otherwise ssh will bring a
+    # diagnostic about not allocating a pty.
+    res = subprocess.check_output(
+        ["ssh", "-G", host], encoding="utf-8", stderr=subprocess.DEVNULL
+    )
+    for line in res.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+
+        key, value = line.split(maxsplit=1)
+        if key != "hostname":
+            continue
+
+        return value
+
+    return None
+
+
+def can_open_tcp(ip, port=22, timeout=1.0):
+    try:
+        socket.create_connection((ip, port), timeout=timeout)
+        return True
+    except socket.timeout:
+        return False
+
+
+def get_router_ip_address():
+    res = subprocess.check_output(["ip", "route", "list"], encoding="utf-8")
+    for line in res.split("\n"):
+        if line.startswith("default via"):
+            return line.split()[2]
+    else:
+        raise RuntimeError("Couldn't find default gateway in output of `ip route list`")
+
+
+def get_mac_address(ip_address):
+    res = subprocess.check_output(["ip", "neigh", "show", ip_address], encoding="utf-8")
+    items = res.split()
+    if "lladdr" in items:
+        return items[items.index("lladdr") + 1]
+    else:
+        raise RuntimeError(f"No entry in `ip neigh show` for {ip_address}")
+
+
+def get_router_mac_address():
+    default_gateway = get_router_ip_address()
+    return get_mac_address(default_gateway)
+
+
+def is_on_home_network():
+    home_network_mac = os.environ.get("HOME_ROUTER_MAC_ADDRESS", None)
+    if home_network_mac is None:
+        return False
+
+    return get_router_mac_address() == home_network_mac
+
+
+def can_connect_via_lan(host, timeout=1.0):
+    lan_ip = get_ssh_hostname(f"{host}_lan")
+    if lan_ip is None:
+        return False
+
+    if not is_on_home_network():
+        return False
+
+    return can_open_tcp(lan_ip, timeout=timeout)
+
+
+def zerotier_service_running():
+    res = subprocess.check_output(
+        ["systemctl", "status", "zerotier-one.service"], encoding="utf-8"
+    )
+    return "(running)" in res
+
+
+def can_connect_via_zerotier(host, timeout=1.0):
+    zerotier_ip = get_ssh_hostname(f"{host}_zerotier")
+    if zerotier_ip is None:
+        return False
+
+    if not zerotier_service_running():
+        return False
+
+    return can_open_tcp(zerotier_ip, timeout=timeout)
+
+
+def can_connect_via_home_gateway(host):
+    # Assume that the gateway machine is always on, and can be reached
+    # from anywhere.  Therefore, if a gateway ssh config exists, it
+    # can be used.
+    return get_ssh_hostname(f"{host}_gateway") is not None
+
+
+def can_use_method(host, method, condition=None, test_connection=True, timeout=1.0):
+    hostname = get_ssh_hostname(f"{host}_{method}")
+
+    if hostname is None:
+        return False
+
+    if condition is not None and not condition():
+        return False
+
+    if test_connection and not can_open_tcp(hostname, timeout=timeout):
+        return False
+
+    return True
+
+
+def find_best_ssh_host(host):
+    configs = {
+        # The LAN check is based on the MAC address of the router,
+        # which can be checked locally.  The home router's MAC address
+        # should be stored in the HOME_ROUTER_MAC_ADDRESS environment
+        # variable, which can be queried using the --get-router-mac
+        # command-line option.
+        "lan": {
+            "condition": is_on_home_network,
+            "test_connection": True,
+        },
+        # I'd like to check if zerotier is connected to a network that
+        # contains the desired address, but unfortunately the
+        # zerotier-cli interface can only be used with sudo
+        # permissions.  As this isn't likely to change, and I'm not
+        # willing to throw sudo around just for a slightly faster
+        # check, we'll just check if the service is running at all.
+        #
+        # https://github.com/zerotier/ZeroTierOne/issues/996
+        "zerotier": {
+            "condition": zerotier_service_running,
+            "test_connection": True,
+        },
+        # Assume that the gateway machine is always on, and can be
+        # reached from anywhere.  Therefore, if a gateway ssh config
+        # exists, it can be used.
+        "gateway": {
+            "condition": None,
+            "test_connection": False,
+        },
+    }
+
+    # for method, config in configs.items():
+    for i, (method, config) in enumerate(configs.items()):
+        # if i == 0:
+        #     os.execlp("ssh", "ssh", "-W", "localhost:22", f"eric@grendel_lan")
+
+        if can_use_method(host, method, **config):
+            return f"{host}_{method}"
+    else:
+        raise RuntimeError(f"Could not find method to connect to {host}")
+
+
+def main(args):
+    if args.get_router_mac:
+        print(get_router_mac_address())
+        return
+
+    host = find_best_ssh_host(args.host)
+
+    os.execlp("ssh", "ssh", "-W", "localhost:22", f"{args.remote_user}@{host}")
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", help="The host to connect to")
+    parser.add_argument("--remote-user", help="The remote user to access as.")
+    parser.add_argument(
+        "--get-router-mac",
+        action="store_true",
+        help=inspect.cleandoc(
+            """
+        Print the MAC address of the router, then exit.  This output
+        value should be stored in the HOME_ROUTER_MAC_ADDRESS
+        environment variable, and is used when checking if the
+        computer is connected to the home LAN.
+        """
+        ),
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
+if __name__ == "__main__":
+    arg_main()
