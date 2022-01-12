@@ -106,6 +106,22 @@
   )
 
 
+(add-hook 'ediff-load-hook
+          (function (lambda ()
+                      ;; Because side-by-side diffs are easier to read
+                      ;; than top/bottom diffs.
+                      (setq ediff-split-window-function #'split-window-horizontally)
+                      ;; Because the default background color is awful
+                      ;; with my preferred color scheme.
+                      (dolist (face (list ediff-odd-diff-face-A ediff-odd-diff-face-B
+                                                            ediff-even-diff-face-A ediff-even-diff-face-B))
+
+                        (set-face-background face "gray10"))
+                      )))
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,6 +185,7 @@
 (use-package ws-butler
   :config
   (ws-butler-global-mode))
+
 
 ;; Kill/yank go to the system's clipboard.  Requires xclip to be
 ;; installed.
