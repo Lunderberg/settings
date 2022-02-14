@@ -1,22 +1,25 @@
+"""
+Usage:
+
+with tvm.transform.PassContext(instruments=[PrintTransformSequence()]):
+    lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
+
+with PrintTransformSequence.context():
+    lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
+
+import pytest
+@pytest.fixture(autouse=True)
+def very_verbose():
+    from lunderberg_tvm_instrument import PrintTransformSequence
+    context = PrintTransformSequence.context()
+    with context:
+        yield
+"""
+
 import inspect
 
 import tvm.relay
 from tvm.ir.instrument import pass_instrument
-
-# Usage:
-#
-# with tvm.transform.PassContext(instruments=[PrintTransformSequence()]):
-#     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
-#
-# with PrintTransformSequence.context():
-#     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
-#
-# @pytest.fixture(autouse=True)
-# def very_verbose():
-#     from lunderberg_tvm_instrument import PrintTransformSequence
-#     context = PrintTransformSequence.context()
-#     with context:
-#         yield
 
 
 @pass_instrument
