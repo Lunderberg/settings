@@ -1,0 +1,6 @@
+.clangd
+build
+build_*
+temp.*
+temp_*
+*~
