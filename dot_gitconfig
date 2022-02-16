@@ -1,15 +1,16 @@
 [user]
-	name = Eldritch Cheese
-	email = eldritch.cheese@gmail.com
+        name = Eldritch Cheese
+        email = eldritch.cheese@gmail.com
 [core]
-	editor = emacs -nw
+        editor = emacs -nw
+        excludesfile = /home/eric/.gitignore_global
 [push]
-	default = simple
+        default = simple
 [pull]
-	rebase = false
+        rebase = false
 
 [submodule]
-	recurse = true
+        recurse = true
 
 [alias]
         ;; From https://stackoverflow.com/a/9074343
