@@ -49,7 +49,8 @@ class PrintTransformSequence:
         print_style: str
 
             If "tvmscript", print a module as TVMScript.  If "tir",
-            print a module using str().
+            print a module using str().  If "function_names", only
+            print the function names.
 
         """
         if isinstance(transforms, str):
@@ -116,13 +117,24 @@ class PrintTransformSequence:
         print(self._indent() + footer, flush=True)
 
     def print_mod(self, mod):
-        if self.print_style == "tir":
+        def print_tir():
             text = []
-            for name, func in mod.functions.items():
+            for name, func in sorted(mod.functions.items(), key=lambda kv: kv[0].name_hint):
                 text.append(f"{name} = {func}")
-            text = "\n".join(text)
-        elif self.print_style == "tvmscript":
-            text = mod.script()
+            return "\n".join(text)
+
+        if self.print_style == "tvmscript":
+            try:
+                text = mod.script()
+            except tvm.TVMError:
+                text = print_tir()
+
+        elif self.print_style == "tir":
+            text = print_tir()
+
+        elif self.print_style == "function_names":
+            text = "\n".join(var.name_hint for var in mod.functions)
+
         else:
             raise RuntimeError(f"Unknown print style {self.print_style}")
 
