@@ -1,9 +1,11 @@
 """
 Usage:
 
+from lunderberg_tvm_instrument import PrintTransformSequence
 with tvm.transform.PassContext(instruments=[PrintTransformSequence()]):
     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
 
+from lunderberg_tvm_instrument import PrintTransformSequence
 with PrintTransformSequence.context():
     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
 
@@ -119,7 +121,9 @@ class PrintTransformSequence:
     def print_mod(self, mod):
         def print_tir():
             text = []
-            for name, func in sorted(mod.functions.items(), key=lambda kv: kv[0].name_hint):
+            for name, func in sorted(
+                mod.functions.items(), key=lambda kv: kv[0].name_hint
+            ):
                 text.append(f"{name} = {func}")
             return "\n".join(text)
 
