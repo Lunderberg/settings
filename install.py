@@ -57,6 +57,7 @@ def install_dotfiles():
     install("dot_Xdefaults", "~/.Xresources")
     install("dot_gdbinit", "~/.gdbinit")
     install("dot_gitignore_global", "~/.gitignore_global")
+    install("dot_docker", "~/.docker")
 
 
 def install_ipython_env():
