@@ -106,6 +106,22 @@
   )
 
 
+(add-hook 'ediff-load-hook
+          (function (lambda ()
+                      ;; Because side-by-side diffs are easier to read
+                      ;; than top/bottom diffs.
+                      (setq ediff-split-window-function #'split-window-horizontally)
+                      ;; Because the default background color is awful
+                      ;; with my preferred color scheme.
+                      (dolist (face (list ediff-odd-diff-face-A ediff-odd-diff-face-B
+                                                            ediff-even-diff-face-A ediff-even-diff-face-B))
+
+                        (set-face-background face "gray10"))
+                      )))
+
+
+
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,6 +185,7 @@
 (use-package ws-butler
   :config
   (ws-butler-global-mode))
+
 
 ;; Kill/yank go to the system's clipboard.  Requires xclip to be
 ;; installed.
@@ -472,6 +489,101 @@
   (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
   )
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;       hideshow customizations       ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; For code-folding
+
+
+;; Not the most robust of defaults, but it's at least semi-functional.
+;; Unfortunately, lsp--get-folding-ranges doesn't give all the
+;; information available from the LSP server.  Improvements could be
+;; made to the `prev-chunk` to strip out comments/strings, and to
+;; search backward to the previous block start/end instead of just the
+;; beginning of the string.
+;;
+;; rust-analyzer collapses
+;; all information into "comment", "imports", "region", and
+;; "". (rust-analyzer/src/to_proto.rs::folding_range().
+;;
+;; clangd doesn't
+;; support folding ranges at all
+;; (https://github.com/clangd/clangd/issues/310).
+(defvar my-hideshow-default-regexes
+  '((:mode rust-mode :regex "^impl.* for " :action fold-children-then-fold)
+    (:mode rust-mode :regex "^impl" :action fold-children)
+    (:mode rust-mode :regex "^struct" :action no-fold)
+    (:mode rust-mode :regex "^use " :action no-fold)
+    (:mode rust-mode :regex "" :action fold-children)
+    )
+  "List of major-mode, regex, action"
+  )
+
+(defun my-hideshow-default ()
+  (defun prev-chunk (pos)
+    (buffer-substring-no-properties (line-beginning-position) (point))
+    )
+
+  (defun rule-applies (rule)
+    (let* ((rule-mode (plist-get rule ':mode))
+           (search-text (prev-chunk (point)))
+           (rule-regex (plist-get rule ':regex))
+           (matches-mode (eq rule-mode major-mode))
+           (matches-regex (string-match-p rule-regex search-text))
+           )
+      (and matches-mode matches-regex)
+      )
+    )
+
+  (when (hs-looking-at-block-start-p)
+    (let* ((rule (cl-find-if 'rule-applies my-hideshow-default-regexes))
+           (action (if rule (plist-get rule ':action) 'fold-children))
+           )
+
+      (cond ((eq action 'fold-children) (hs-hide-level 1) (forward-sexp))
+            ((eq action 'fold) (hs-hide-block-at-point) (forward-sexp))
+            ((eq action 'fold-children-then-fold)
+             (hs-hide-level 1) (hs-hide-block-at-point) (forward-sexp))
+            ((eq action 'no-fold) nil)
+            ('t (error "Unknown action: %s" action)))
+    ))
+  )
+
+
+
+(use-package fold-dwim
+  :ensure t
+  )
+
+(use-package hideshow
+  :ensure nil
+  :hook ((rust-mode . hs-minor-mode)
+         (hs-minor-mode . hs-hide-all)
+         )
+  :bind (("C-c C-f" . fold-dwim-toggle))
+  :config
+  (setq hs-allow-nesting t)
+  (setq hs-hide-all-non-comment-function 'my-hideshow-default)
+  (add-to-list 'hs-special-modes-alist '(rust-mode "{" "}"))
+
+  ;; Functions that jump into the middle of a block should expand that
+  ;; block.
+  (defun hs-show-block-saved-excursion (&rest r)
+    (save-excursion (hs-show-block)))
+  (dolist (func (list
+                  'goto-line
+                  'xref-goto-xref
+                  'xref-find-definitions
+                  'xref-find-definitions-other-window
+                  ))
+
+    (advice-add func :after #'hs-show-block-saved-excursion))
+  )
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;       makefile customizations       ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -746,7 +858,7 @@
   :ensure nil
   :mode ("\\.h$" . c++-mode)
   :bind (:map c-mode-base-map
-              ("C-c C-f" . ff-find-other-file)
+              ;; ("C-c C-f" . ff-find-other-file)
               ("C-j" . newline-and-indent)
               ("C-c c" . find-makefile-compile)
               ("C-c C-c" . find-makefile-compile-fast))
@@ -1006,6 +1118,8 @@
          ("C-c C-r" . rust-run)
          ("C-c C-t" . rust-test))
   :config
+  ;; rust-mode defines several C-c commands, which I want for myself.
+  (setq rust-mode-map (make-sparse-keymap))
   (setq rust-format-on-save t)
   (setq lsp-rust-server 'rust-analyzer)
   (setq lsp-rust-analyzer-server-command '("rustup" "run" "nightly" "rust-analyzer"))

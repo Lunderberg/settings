@@ -1,3 +1,23 @@
+"""
+Usage:
+
+from lunderberg_tvm_instrument import PrintTransformSequence
+with tvm.transform.PassContext(instruments=[PrintTransformSequence()]):
+    lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
+
+from lunderberg_tvm_instrument import PrintTransformSequence
+with PrintTransformSequence.context():
+    lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
+
+import pytest
+@pytest.fixture(autouse=True)
+def very_verbose():
+    from lunderberg_tvm_instrument import PrintTransformSequence
+    context = PrintTransformSequence.context()
+    with context:
+        yield
+"""
+
 import inspect
 
 import tvm.relay
@@ -6,7 +26,7 @@ from tvm.ir.instrument import pass_instrument
 
 @pass_instrument
 class PrintTransformSequence:
-    def __init__(self, transforms=None, print_tir=True):
+    def __init__(self, transforms=None, print_before_after=True, print_style="tir"):
         """Construct the Instrumenter
 
         Parameters
@@ -18,7 +38,7 @@ class PrintTransformSequence:
             printed.  If a list of strings, only those passes are
             printed.
 
-        print_tir : Union[bool, List[str]]
+        print_before_after : Union[bool, List[str]]
 
             Which transforms should have their before/after TIR
             printed.  If True, all passes are printed.  If False, no
@@ -28,6 +48,12 @@ class PrintTransformSequence:
             Only applies to transforms that are printed based on the
             `transforms` argument.
 
+        print_style: str
+
+            If "tvmscript", print a module as TVMScript.  If "tir",
+            print a module using str().  If "function_names", only
+            print the function names.
+
         """
         if isinstance(transforms, str):
             self.transforms = [transforms]
@@ -35,27 +61,28 @@ class PrintTransformSequence:
             self.transforms = transforms
 
         self.nesting_level = 0
-        self.print_tir = print_tir
+        self.print_before_after = print_before_after
         self.div_length = 40
+        self.print_style = print_style
 
     @classmethod
     def context(cls, *args, **kwargs):
         obj = cls(*args, **kwargs)
         return tvm.transform.PassContext(instruments=[obj])
 
-    def _print_tir(self, name):
-        if isinstance(self.print_tir, bool):
-            return self.print_tir
+    def _print_before_after(self, name):
+        if isinstance(self.print_before_after, bool):
+            return self.print_before_after
         else:
-            return name in self.print_tir
+            return name in self.print_before_after
 
     def _indent(self):
         return " " * (4 * self.nesting_level)
 
     def run_before_pass(self, mod, info):
         if self.transforms is None or info.name in self.transforms:
-            print_tir = self._print_tir(info.name)
-            if print_tir:
+            print_before_after = self._print_before_after(info.name)
+            if print_before_after:
                 self.print_header(f"Before {info.name}")
                 self.print_mod(mod)
                 self.print_footer()
@@ -68,8 +95,8 @@ class PrintTransformSequence:
         if self.transforms is None or info.name in self.transforms:
             self.nesting_level -= 1
 
-            print_tir = self._print_tir(info.name)
-            if print_tir:
+            print_before_after = self._print_before_after(info.name)
+            if print_before_after:
                 self.print_header(f"After {info.name}")
                 self.print_mod(mod)
                 self.print_footer()
@@ -85,29 +112,36 @@ class PrintTransformSequence:
                 "-" * right_div_length,
             ]
         )
-        print(self._indent() + header)
+        print(self._indent() + header, flush=True)
 
     def print_footer(self):
         footer = "-" * self.div_length
-        print(self._indent() + footer)
+        print(self._indent() + footer, flush=True)
 
     def print_mod(self, mod):
-        text = []
-        for name, func in mod.functions.items():
-            text.append(f"{name} = {func}")
-        text = "\n".join(text)
+        def print_tir():
+            text = []
+            for name, func in sorted(
+                mod.functions.items(), key=lambda kv: kv[0].name_hint
+            ):
+                text.append(f"{name} = {func}")
+            return "\n".join(text)
+
+        if self.print_style == "tvmscript":
+            try:
+                text = mod.script()
+            except tvm.TVMError:
+                text = print_tir()
+
+        elif self.print_style == "tir":
+            text = print_tir()
+
+        elif self.print_style == "function_names":
+            text = "\n".join(var.name_hint for var in mod.functions)
+
+        else:
+            raise RuntimeError(f"Unknown print style {self.print_style}")
 
         indent = self._indent()
         text = "\n".join(indent + line for line in text.split("\n"))
-        print(text)
-
-
-# Usage:
-#
-# with tvm.transform.PassContext(instruments=PrintTransformSequence()):
-#     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
-#
-# with PrintTransformSequence.context():
-#     lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
-
-#
+        print(text, flush=True)

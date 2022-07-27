@@ -1,0 +1,4 @@
+{
+    "comment": "Keep docker from taking control of C-p.  Can't disable it, but I can move it to a less frequently used key combination.",
+    "detachKeys": "ctrl-@,ctrl-@"
+}
