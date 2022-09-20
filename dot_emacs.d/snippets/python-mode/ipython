@@ -3,4 +3,4 @@
 # key: ipy
 # group: debug
 # --
-import IPython; IPython.embed()
+import IPython; IPython.embed(colors='neutral')
