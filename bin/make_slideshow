@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+import argparse
+import math
+import pathlib
+import subprocess
+import tempfile
+
+
+def main(args):
+    suffixes = {input_image.suffix for input_image in args.input_images}
+    if len(suffixes) > 1:
+        raise ValueError(
+            f"Expected all images to have same file extension, but received {suffixes}"
+        )
+    suffix = next(iter(suffixes))
+
+    digits = math.ceil(math.log10(len(args.input_images)))
+
+    with tempfile.TemporaryDirectory(prefix="slideshow_") as tempdir:
+        tempdir = pathlib.Path(tempdir)
+
+        for i, input_image in enumerate(args.input_images):
+            name = f"{i:0{digits}d}{suffix}"
+            tempdir.joinpath(name).symlink_to(input_image.resolve())
+
+        cmd = [
+            "ffmpeg",
+            # Input files
+            "-i",
+            str(tempdir.joinpath(f"%0{digits}{suffix}")),
+            # Framerate of the input images
+            "-framerate",
+            str(1 / args.delay),
+            # Video codec
+            "-c:v",
+            "libx264",
+            # Color model used for x264
+            "-pix_fmt",
+            "yuv420p",
+            # Output framerate
+            "-r",
+            "30",
+            # Output filename, overwrite if exists
+            "-y",
+            args.output,
+        ]
+
+        subprocess.check_call(cmd)
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-i",
+        "--input-images",
+        nargs="+",
+        type=pathlib.Path,
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=pathlib.Path,
+        required=True,
+    )
+    parser.add_argument(
+        "-d",
+        "--delay",
+        type=float,
+        default=2.0,
+        help="The delay (seconds) between each image.",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
+if __name__ == "__main__":
+    arg_main()
