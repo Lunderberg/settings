@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import argparse
+import datetime
+import string
+import subprocess
+import sys
+
+
+def format_timedelta(delta):
+    rem = total_seconds = delta.total_seconds()
+    days, rem = divmod(rem, 86400)
+    days = int(days)
+    hours, rem = divmod(rem, 3600)
+    hours = int(hours)
+    minutes, rem = divmod(rem, 60)
+    minutes = int(minutes)
+    seconds, rem = divmod(rem, 60)
+    seconds = int(seconds)
+    ms, rem = divmod(rem, 1.0)
+    ms = int(ms)
+
+    if days:
+        return f"{days}d {hours:02d}h{minutes:02d}m{seconds:02d}s"
+    elif hours:
+        return f"{hours:d}h{minutes:02d}m{seconds:02d}s"
+    elif minutes:
+        return f"{minutes:2d}m{seconds:02d}s"
+    elif ms:
+        return f"{seconds}.{ms}s"
+    else:
+        return f"{seconds}s"
+
+
+def main(args):
+    longest_filepath = max(len(filepath) for filepath in args.file)
+
+    for filepath in args.file:
+        cmd = [
+            "mediainfo",
+            filepath,
+            "--Output=General;%Duration%",
+        ]
+        output = subprocess.check_output(cmd, encoding="utf-8").strip()
+        if output:
+            runtime = datetime.timedelta(milliseconds=int(output))
+
+            runtime_str = format_timedelta(runtime)
+
+            if args.show_filename:
+                print(f"{filepath:{longest_filepath}}", runtime_str)
+            else:
+                print(runtime_str)
+        else:
+            print(f"Error reading {filepath}", file=sys.stderr)
+
+
+def arg_main():
+    def Bool(arg):
+        arg = arg.lower()
+        if arg in ["t", "true", "on", "yes"]:
+            return True
+        elif arg in ["f", "false", "off", "no"]:
+            return False
+        else:
+            raise ValueError(f"Unknown boolean argument: {arg}")
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "file",
+        nargs="+",
+        help="The media file(s) from which to read the runtime",
+        type=str,
+    )
+    parser.add_argument(
+        "--show-filename",
+        nargs="?",
+        const=True,
+        default=None,
+        type=Bool,
+        help=(
+            "Whether to display the filename along with the runtime.  "
+            "By default, will show if more than one file is passed as input."
+        ),
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    if args.show_filename is None:
+        args.show_filename = len(args.file) > 1
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
+if __name__ == "__main__":
+    arg_main()
