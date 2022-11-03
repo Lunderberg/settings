@@ -2,6 +2,7 @@
 
 import argparse
 import io
+import json
 import os
 import subprocess
 import urllib.request
@@ -57,7 +58,6 @@ def install_dotfiles():
     install("dot_Xdefaults", "~/.Xresources")
     install("dot_gdbinit", "~/.gdbinit")
     install("dot_gitignore_global", "~/.gitignore_global")
-    install("dot_docker", "~/.docker")
 
 
 def install_ipython_env():
@@ -84,6 +84,35 @@ def update_bashrc():
             f.write(bashrc)
 
 
+def update_docker_config():
+    """Add custom parameters to the docker config
+
+    I'd love to just symlink ~/.docker/config.json to a file in this
+    repo, but the config file has an annoying mix of user preferences
+    (e.g. detachKeys) and system setup (e.g. currentContext).
+    Therefore, need to update the file with my user preferences while
+    carefully preserving the system setup.
+    """
+
+    config_path = sys_path("~", ".docker", "config.json")
+    if config_path.exists():
+        with config_path.open() as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    updated = False
+
+    if "detachKeys" not in config:
+        config["detachKeys"] = "ctrl-@,ctrl-@"
+        updated = True
+
+    if updated:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        with config_path.open("w") as f:
+            json.dump(f)
+
+
 def run_private_install():
     private_script = repo_path("external", "settings-private", "install.py")
     if private_script.exists():
@@ -98,6 +127,7 @@ def main(args):
     install_ipython_env()
 
     update_bashrc()
+    update_docker_config()
 
     run_private_install()
 
