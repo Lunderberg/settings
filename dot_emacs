@@ -596,8 +596,9 @@
   :ensure nil
   :config
   (append-to-list 'grep-find-ignored-directories
-     '("build" ".build" "build_local" "build_debug"
+    '("build" ".build" "build_local" "build_debug"
       "build_docker" "build_docker_cpu" "build_docker_gpu"
+      "build-cpu" "build-i386" "build_docker_qemu" "build-hexagon" "build-gpu" "build-wasm"
       "docs/_build" "docs/_staging" "docs/doxygen")
     ))
 
