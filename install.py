@@ -95,11 +95,15 @@ def update_docker_config():
     """
 
     config_path = sys_path("~", ".docker", "config.json")
+
+    config = {}
     if config_path.exists():
         with config_path.open() as f:
-            config = json.load(f)
-    else:
-        config = {}
+            text = f.read()
+
+        text = text.strip()
+        if text:
+            config = json.loads(text)
 
     updated = False
 
@@ -110,7 +114,7 @@ def update_docker_config():
     if updated:
         config_path.parent.mkdir(parents=True, exist_ok=True)
         with config_path.open("w") as f:
-            json.dump(f)
+            json.dump(config, f)
 
 
 def run_private_install():
