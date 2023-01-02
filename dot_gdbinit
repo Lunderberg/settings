@@ -12,8 +12,8 @@ set print elements 10000
 # into C++.  Requires a debug version of python to be installed
 # (e.g. sudo apt install python3.8-dbg)
 #set auto-load python-scripts on
-source ~/settings/external/tvm-gdb-extension/tvm_packedfunc_filter.py
-source ~/settings/external/tvm-gdb-extension/tvm_pretty_print.py
+
+source ~/settings/external/tvm-gdb-extension/source-me.py
 
 # Break on TVM error
 set breakpoint pending on
