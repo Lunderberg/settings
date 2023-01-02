@@ -51,6 +51,9 @@ export PS1="\[\e[${USER_COLOR}m\]\u\[\e[1;32m\]@\[\e[${SERVER_COLOR}m\]\h\[\e[1;
 
 export HISTFILESIZE=10000
 
+# TVM-specific settings
+export TVM_PYGMENTIZE_STYLE=dracula
+
 #Make handling the DISPLAY variable a bit easier with tmux.  This will
 #update the current shell to have the same DISPLAY variable as the
 #most recent attachment to tmux.
