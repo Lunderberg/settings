@@ -16,6 +16,6 @@ set print elements 10000
 source ~/settings/external/tvm-gdb-extension/source-me.py
 
 # Break on TVM error
-set breakpoint pending on
-break ::tvm::runtime::detail::LogFatal::LogFatal
-set breakpoint pending auto
+# set breakpoint pending on
+# break ::tvm::runtime::detail::LogFatal::LogFatal
+# set breakpoint pending auto
