@@ -962,6 +962,25 @@
 ;;;      Python customizations         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun tir-to-python ()
+  (interactive)
+
+    (dolist (replacement '(("&&" . "and")
+                           ("||" . "or")
+                           ("(bool)1" . "True")
+                           ("(bool)0" . "False")
+                           ("0f" . "0.0")
+                           ("!" . "not ")
+                           ("not =" . "!=")
+                          ))
+      (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward (car replacement) nil t)
+        (replace-match (cdr replacement)))
+      ))
+    )
+
+
 (use-package python
   :ensure nil
   :mode ("SConstruct" "SConscript")
