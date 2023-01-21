@@ -154,7 +154,7 @@ def arg_main():
     )
     parser.add_argument(
         "command",
-        nargs="+",
+        nargs="*",
         default=None,
         type=str,
         help=(
