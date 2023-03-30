@@ -123,7 +123,9 @@
 
 
 
-
+;; Prefer side-by-side display, unless the window is already narrow
+(setq split-width-threshold 160)
+(setq split-height-threshold nil)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
