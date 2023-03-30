@@ -628,16 +628,12 @@
   (cond ((string-match "\\(GNUm\\|M\\|m\\)akefile" filename) "make")
         ((equal filename "SConstruct") "scons")))
 
-;; TODO: Add defcustom variables for the number of threads to use,
-;; defaulting to 1 (slow) and some proportion of the total threads on
-;; the machine (fast).
-
 ;; TODO: Add defcustom variable for additional options being passed
 ;; (e.g. --keep-going).
 
 ;; TODO: Search for the makefile once, then set compile-command to a
 ;; buffer-local variable with the result, and compilation-read-command
-(defun find-makefile-compile-impl (clean threads)
+(defun find-makefile-compile-impl (clean)
   (let ((file (find-file-in-hierarchy (file-name-directory buffer-file-name)
                                       "^\\(\\(GNUm\\|M\\|m\\)akefile$\\)\\|\\(SConstruct$\\)")))
     (when file
@@ -647,16 +643,12 @@
              (cleanflag (if clean
                             (if (equal program "make") "clean" "-c")
                           "")))
-        (compile (format "cd \"%s\" && %s -j%d %s"
-                         directory program threads cleanflag))))))
+        (compile (format "cd \"%s\" && %s %s"
+                         directory program cleanflag))))))
 
 (defun find-makefile-compile (clean)
   (interactive "p")
-  (find-makefile-compile-impl (> clean 1) 1))
-
-(defun find-makefile-compile-fast (clean)
-  (interactive "p")
-  (find-makefile-compile-impl (> clean 1) 8))
+  (find-makefile-compile-impl (> clean 1)))
 
 (use-package ansi-color
   :ensure nil
@@ -689,8 +681,7 @@
   :ensure nil
   :mode ("\\.inc\\'" . makefile-gmake-mode)
   :bind (:map makefile-mode-map
-              ("C-c c" . find-makefile-compile)
-              ("C-c C-c" . find-makefile-compile-fast))
+              ("C-c C-c" . find-makefile-compile))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -863,8 +854,7 @@
   :bind (:map c-mode-base-map
               ;; ("C-c C-f" . ff-find-other-file)
               ("C-j" . newline-and-indent)
-              ("C-c c" . find-makefile-compile)
-              ("C-c C-c" . find-makefile-compile-fast))
+              ("C-c C-c" . find-makefile-compile))
 
   :config
   (c-toggle-auto-newline -1)
@@ -1024,8 +1014,7 @@
               ;; Need to redefine C-j, because auctex defines it as
               ;; reindent-newline-and-indent.
               ("C-j" . newline-and-indent)
-              ("C-c c" . find-makefile-compile)
-              ("C-c C-c" . find-makefile-compile-fast)
+              ("C-c C-c" . find-makefile-compile)
               )
   :config
   (add-hook 'LaTeX-mode-hook
