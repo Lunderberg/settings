@@ -18,7 +18,11 @@ def very_verbose():
         yield
 """
 
+import contextlib
 import inspect
+import io
+
+import black
 
 import tvm.relay
 from tvm.ir.instrument import pass_instrument
@@ -26,7 +30,9 @@ from tvm.ir.instrument import pass_instrument
 
 @pass_instrument
 class PrintTransformSequence:
-    def __init__(self, transforms=None, print_before_after=True, print_style="tir"):
+    def __init__(
+        self, transforms=None, print_before_after=True, print_style="tvmscript"
+    ):
         """Construct the Instrumenter
 
         Parameters
@@ -129,8 +135,10 @@ class PrintTransformSequence:
 
         if self.print_style == "tvmscript":
             try:
-                text = mod.script()
-            except tvm.TVMError:
+                with contextlib.redirect_stdout(io.StringIO()) as f:
+                    mod.show()
+                text = f.getvalue()
+            except (tvm.TVMError, black.InvalidInput):
                 text = print_tir()
 
         elif self.print_style == "tir":
