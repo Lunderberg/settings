@@ -4,10 +4,15 @@ import argparse
 import io
 import json
 import os
+import pathlib
 import subprocess
+import sys
 import urllib.request
 import zipfile
 
+pylib_path = str(pathlib.Path(__file__).parent.joinpath('pylib').resolve())
+sys.path.append(pylib_path)
+os.environ['PYTHONPATH'] = ':'.join([os.environ.get('PYTHONPATH',''),pylib_path])
 from install_utils import Installer
 
 installer = Installer(__file__)

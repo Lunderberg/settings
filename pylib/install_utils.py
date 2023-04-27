@@ -40,6 +40,7 @@ class Installer:
             ), f"{sys_file} points to {sys_file.resolve()}, not to {repo_file}"
 
         else:
+            sys_file.parent.mkdir(parents=True, exist_ok=True)
             sys_file.symlink_to(repo_file)
             print("{0} linked to {1}".format(sys_file, repo_file))
 

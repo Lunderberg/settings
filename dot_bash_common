@@ -6,8 +6,12 @@ export PATH=$SCRIPT_DIR/bin:$PATH
 export PATH=.:~/.local/bin:~/bin:$PATH
 
 # Local installation of emacs, if one exists.
-if ls /opt | grep -q emacs; then
-   export PATH=$PATH:$(ls -d /opt/emacs-*/bin)
+if ls /opt/*emacs*  > /dev/null 2> /dev/null; then
+    EMACS_BIN=$(find -L /opt/*emacs* -name emacs -type f | sort | tail -n1)
+    export PATH="$(dirname "${EMACS_BIN}")":$PATH
+fi
+if [[ -d /opt/bin ]]; then
+    export PATH=$PATH:/opt/bin
 fi
 
 # Add any ruby bin directories (e.g. for jekyll)
