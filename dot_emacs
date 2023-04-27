@@ -342,6 +342,7 @@
          )
   :config
   (setq magit-define-global-key-bindings nil)
+  (put 'magit-edit-line-commit 'disabled nil)
   )
 
 (use-package github-link
