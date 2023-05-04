@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -euo pipefail
+
+USAGE="
+Usage: color_tee FILENAME
+   Strip color codes when saving to file,
+   while still displaying in terminal."
+
+if [[ "$#" -ne 1 ]]; then
+    echo "Error: Unexpected usage" >&2
+    echo "${USAGE}" >&2
+    exit 1
+fi
+
+if [[ "$1" = "--help" ]]; then
+    echo "${USAGE}"
+    exit 0
+fi
+
+cat | tee  >(sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,3}){0,3})?[m|K]//g' > "$1")
