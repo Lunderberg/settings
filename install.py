@@ -157,7 +157,11 @@ def arg_main():
         main(args)
     except Exception:
         if args.pdb:
-            import pdb, traceback
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
+            import traceback
 
             traceback.print_exc()
             pdb.post_mortem()
