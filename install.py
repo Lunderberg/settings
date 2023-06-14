@@ -5,6 +5,7 @@ import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import urllib.request
@@ -28,7 +29,33 @@ def git_submodule_update():
     )
 
 
+def get_repo_clangd_version():
+    lines = subprocess.check_output(
+        ["apt-cache", "show", "clangd"], encoding="utf-8"
+    ).split("\n")
+    # fmt: off
+    regex = (
+        r"Version: 1:"
+        r"(?P<major>\d+)"
+        r'\.'
+        r"(?P<minor>\d+)"
+    )
+    # fmt: on
+
+    for line in lines:
+        if res := re.match(regex, line):
+            major = int(res.group("major"))
+            minor = int(res.group("minor"))
+            return (major, minor)
+
+    raise RuntimeError("Could not find version in apt-get show clangd output")
+
+
 def download_clangd():
+    repo_version = get_repo_clangd_version()
+    if repo_version > (12, 0):
+        return
+
     clangd_symlink = repo_path("bin", "clangd")
     clangd_loc = repo_path("bin", "clangd_12.0.0", "bin", "clangd")
     if os.path.lexists(clangd_symlink):
