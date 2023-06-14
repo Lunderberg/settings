@@ -64,6 +64,7 @@ def install_dotfiles():
     install("dot_gdbinit", "~/.gdbinit")
     install("dot_gitignore_global", "~/.gitignore_global")
     install("dot_cargo_config.toml", "~/.cargo/config.toml")
+    install("ccache.conf", "~/.config/ccache/ccache.conf")
 
 
 def install_ipython_env():
