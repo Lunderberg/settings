@@ -4,10 +4,16 @@ import argparse
 import io
 import json
 import os
+import pathlib
+import re
 import subprocess
+import sys
 import urllib.request
 import zipfile
 
+pylib_path = str(pathlib.Path(__file__).parent.joinpath('pylib').resolve())
+sys.path.append(pylib_path)
+os.environ['PYTHONPATH'] = ':'.join([os.environ.get('PYTHONPATH',''),pylib_path])
 from install_utils import Installer
 
 installer = Installer(__file__)
@@ -23,7 +29,33 @@ def git_submodule_update():
     )
 
 
+def get_repo_clangd_version():
+    lines = subprocess.check_output(
+        ["apt-cache", "show", "clangd"], encoding="utf-8"
+    ).split("\n")
+    # fmt: off
+    regex = (
+        r"Version: 1:"
+        r"(?P<major>\d+)"
+        r'\.'
+        r"(?P<minor>\d+)"
+    )
+    # fmt: on
+
+    for line in lines:
+        if res := re.match(regex, line):
+            major = int(res.group("major"))
+            minor = int(res.group("minor"))
+            return (major, minor)
+
+    raise RuntimeError("Could not find version in apt-get show clangd output")
+
+
 def download_clangd():
+    repo_version = get_repo_clangd_version()
+    if repo_version > (12, 0):
+        return
+
     clangd_symlink = repo_path("bin", "clangd")
     clangd_loc = repo_path("bin", "clangd_12.0.0", "bin", "clangd")
     if os.path.lexists(clangd_symlink):
@@ -59,6 +91,7 @@ def install_dotfiles():
     install("dot_gdbinit", "~/.gdbinit")
     install("dot_gitignore_global", "~/.gitignore_global")
     install("dot_cargo_config.toml", "~/.cargo/config.toml")
+    install("ccache.conf", "~/.config/ccache/ccache.conf")
 
 
 def install_ipython_env():
@@ -151,7 +184,11 @@ def arg_main():
         main(args)
     except Exception:
         if args.pdb:
-            import pdb, traceback
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
+            import traceback
 
             traceback.print_exc()
             pdb.post_mortem()
