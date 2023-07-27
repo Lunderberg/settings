@@ -19,10 +19,11 @@ def very_verbose():
 """
 
 import contextlib
-import inspect
-import io
 
 import black
+import pygments
+import pygments.formatters
+import pygments.lexers.python
 
 import tvm.relay
 from tvm.ir.instrument import pass_instrument
@@ -31,7 +32,14 @@ from tvm.ir.instrument import pass_instrument
 @pass_instrument
 class PrintTransformSequence:
     def __init__(
-        self, transforms=None, print_before_after=True, print_style="tvmscript"
+        self,
+        transforms=None,
+        print_before_after=True,
+        print_style="tvmscript",
+        pygments_style="dracula",
+        max_blacken_length=64 * 1024,
+        max_pygments_length=16 * 1024,
+        ignore_passes_inside=None,
     ):
         """Construct the Instrumenter
 
@@ -60,6 +68,22 @@ class PrintTransformSequence:
             print a module using str().  If "function_names", only
             print the function names.
 
+        pygments_style: Optional[str]
+
+            The pygments style for highlighting.  If `None`, no
+            formatting is applied.  Defaults to "dracula".
+
+        max_blacken_length: Optional[int]
+
+            The maximum length of a module, in bytes, in order to
+            apply `black.format_str` on it.  If `None`, no limit is
+            applied.
+
+        max_pygments_length: Optional[int]
+
+            The maximum length of a module, in bytes, in order to
+            apply `pygments.highligh` on it.  If `None`, no limit is
+            applied.
         """
         if isinstance(transforms, str):
             self.transforms = [transforms]
@@ -67,9 +91,15 @@ class PrintTransformSequence:
             self.transforms = transforms
 
         self.nesting_level = 0
+        self.current_nested_passes = []
         self.print_before_after = print_before_after
         self.div_length = 40
         self.print_style = print_style
+        self.pygments_style = pygments_style
+
+        self.max_blacken_length = max_blacken_length
+        self.max_pygments_length = max_pygments_length
+        self.ignore_passes_inside = ignore_passes_inside
 
     @classmethod
     def context(cls, *args, **kwargs):
@@ -86,6 +116,7 @@ class PrintTransformSequence:
         return " " * (4 * self.nesting_level)
 
     def run_before_pass(self, mod, info):
+        self.current_nested_passes.append(info.name)
         if self.transforms is None or info.name in self.transforms:
             print_before_after = self._print_before_after(info.name)
             if print_before_after:
@@ -98,6 +129,7 @@ class PrintTransformSequence:
             self.nesting_level += 1
 
     def run_after_pass(self, mod, info):
+        self.current_nested_passes.pop()
         if self.transforms is None or info.name in self.transforms:
             self.nesting_level -= 1
 
@@ -114,7 +146,9 @@ class PrintTransformSequence:
         header = "".join(
             [
                 "-" * left_div_length,
+                " ",
                 header,
+                " ",
                 "-" * right_div_length,
             ]
         )
@@ -123,6 +157,22 @@ class PrintTransformSequence:
     def print_footer(self):
         footer = "-" * self.div_length
         print(self._indent() + footer, flush=True)
+
+    def as_tvmscript(self, mod):
+        text = mod.script(syntax_sugar=True)
+
+        if self.max_blacken_length is None or len(text) < self.max_blacken_length:
+            with contextlib.suppress(black.InvalidInput):
+                text = black.format_str(text, mode=black.FileMode())
+
+        if self.pygments_style is not None:
+            if self.max_pygments_length is None or len(text) < self.max_pygments_length:
+                text = pygments.highlight(
+                    text,
+                    pygments.lexers.python.Python3Lexer(),
+                    pygments.formatters.Terminal256Formatter(style=self.pygments_style),
+                )
+        return text
 
     def print_mod(self, mod):
         def print_tir():
@@ -134,12 +184,7 @@ class PrintTransformSequence:
             return "\n".join(text)
 
         if self.print_style == "tvmscript":
-            try:
-                with contextlib.redirect_stdout(io.StringIO()) as f:
-                    mod.show()
-                text = f.getvalue()
-            except (tvm.TVMError, black.InvalidInput):
-                text = print_tir()
+            text = self.as_tvmscript(mod)
 
         elif self.print_style == "tir":
             text = print_tir()
@@ -153,3 +198,22 @@ class PrintTransformSequence:
         indent = self._indent()
         text = "\n".join(indent + line for line in text.split("\n"))
         print(text, flush=True)
+
+
+@pass_instrument
+class VerifyWellFormed:
+    def run_before_pass(self, mod, info):
+        if not tvm.tir.analysis.verify_well_formed(mod, assert_mode=False):
+            print("-*" * 30 + "-")
+            print(f"Failure prior to running {info.name}")
+            print(mod)
+            print("-*" * 30 + "-", flush=True)
+            tvm.tir.analysis.verify_well_formed(mod)
+
+    def run_after_pass(self, mod, info):
+        if not tvm.tir.analysis.verify_well_formed(mod, assert_mode=False):
+            print("-*" * 30 + "-")
+            print(f"Failure after running {info.name}")
+            print(mod)
+            print("-*" * 30 + "-", flush=True)
+            tvm.tir.analysis.verify_well_formed(mod)

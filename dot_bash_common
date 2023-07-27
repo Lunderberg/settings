@@ -28,6 +28,10 @@ fi
 export PYTHONPATH=$PYTHONPATH:$SCRIPT_DIR/pylib
 export XENVIRONMENT=~/.Xresources
 
+if python3 -c "import ipdb" 2> /dev/null; then
+    export PYTEST_ADDOPTS='--pdbcls=IPython.terminal.debugger:TerminalPdb'
+fi
+
 
 # Prevent pip popup unnecessarily asking to unlock the "kdewallet"
 # keyring.
