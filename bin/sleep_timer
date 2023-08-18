@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+import argparse
+import collections
+import datetime
+import enum
+import re
+import time
+
+from typing import Optional
+
+import tqdm
+
+
+def parse_timedelta(time_str: str) -> datetime.timedelta:
+    formats = [
+        r"^(?P<days>\d+(\.\d+)?)d$",
+        r"^(?P<hours>\d+(\.\d+)?)h$",
+        r"^(?P<minutes>\d+(\.\d+)?)m$",
+        r"^((((?P<days>\d+)d)?(?P<hours>\d+)h)?(?P<minutes>\d+)m)?(?P<seconds>\d+(\.\d+)?)s?$",
+    ]
+
+    for regex in formats:
+        if res := re.match(regex, time_str):
+            res = collections.defaultdict(lambda: 0, res.groupdict(default=0))
+            days = float(res["days"])
+            hours = float(res["hours"])
+            minutes = float(res["minutes"])
+            seconds = float(res["seconds"])
+            break
+
+    else:
+        raise ValueError(f"Unable to parse duration: {time_str}")
+
+    return datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+
+
+def main(args):
+    duration = args.duration
+    start = datetime.datetime.now()
+    end = datetime.datetime.now() + duration
+
+    progress_bar = tqdm.tqdm(
+        total=int(duration.total_seconds() * 1e6),
+        bar_format="{l_bar}{bar}| {elapsed} < {remaining}",
+    )
+
+    def time_iter():
+        prev = 0
+        while True:
+            now = min(datetime.datetime.now(), end)
+            elapsed = now - start
+            elapsed_us = int(elapsed.total_seconds() * 1e6)
+
+            prev, delta_us = elapsed_us, elapsed_us - prev
+
+            yield delta_us
+            if now >= end:
+                break
+            else:
+                time.sleep(args.update_duration.total_seconds())
+
+    for delta_microseconds in time_iter():
+        progress_bar.update(delta_microseconds)
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "duration",
+        type=parse_timedelta,
+        help="The time for which to sleep",
+    )
+    parser.add_argument(
+        "--update-duration",
+        default="0.5s",
+        type=parse_timedelta,
+        help="How often to update the display",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
+if __name__ == "__main__":
+    arg_main()
