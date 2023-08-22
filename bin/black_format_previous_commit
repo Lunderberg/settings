@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+
+import argparse
+import pathlib
+import os
+import subprocess
+
+
+def main(args):
+    assert not (args.amend and args.commit_message)
+
+    os.chdir(args.git_dir)
+
+    text = subprocess.check_output(
+        [
+            "git",
+            "show",
+            "--name-status",
+            "--no-renames",
+            "--pretty=",
+        ],
+        encoding="utf-8",
+    )
+
+    filepaths = []
+    for line in text.split("\n"):
+        if line and line[0] in ["A", "M"]:
+            filepaths.append(pathlib.Path(line[1:].strip()))
+
+    filepaths = [p for p in filepaths if p.suffix == ".py"]
+
+    if not filepaths:
+        return
+
+    filepaths = [p.as_posix() for p in filepaths]
+    subprocess.check_call(["black", *filepaths])
+
+    git_diff_result = subprocess.run(
+        ["git", "diff", "--exit-code"], stdout=subprocess.DEVNULL
+    )
+    if git_diff_result.returncode == 0:
+        return
+
+    subprocess.check_call(["git", "add", *filepaths])
+
+    if args.amend:
+        subprocess.check_call(["git", "commit", "--amend", "--no-edit"])
+    elif args.commit_message:
+        subprocess.check_call(["git", "commit", "--message", args.commit_message])
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-d",
+        "--git-dir",
+        type=pathlib.Path,
+        default=pathlib.Path.cwd(),
+        help="The git directory",
+    )
+    parser.add_argument(
+        "--amend",
+        action="store_true",
+        help="Amend the previous commit after formatting",
+    )
+    parser.add_argument(
+        "--commit-message",
+        type=str,
+        default=None,
+        help="The commit message to use for an automatic commit with the formatting",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        main(args)
+    except Exception:
+        if args.pdb:
+            import pdb, traceback
+
+            traceback.print_exc()
+            pdb.post_mortem()
+        raise
+
+
+if __name__ == "__main__":
+    arg_main()
