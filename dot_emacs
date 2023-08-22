@@ -874,6 +874,12 @@
   (add-to-list 'c-default-style '(cuda-mode . "lunderberg"))
   )
 
+(use-package lsp-clangd
+  :ensure nil
+  :config
+  (setq lsp-clients-clangd-args
+        (append-to-list `lsp-clients-clangd-args '("--query-driver=/usr/bin/**"))))
+
 (use-package cuda-mode
   :ensure t
   :load-path "misc"
