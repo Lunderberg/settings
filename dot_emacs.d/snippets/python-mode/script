@@ -5,10 +5,30 @@
 #!/usr/bin/env python3
 
 import argparse
+import contextlib
 
 
 def main(args):
     pass
+
+
+@contextlib.contextmanager
+def debug_on_except():
+    try:
+        yield
+    finally:
+        if sys.exc_info() == (None, None, None):
+            return
+
+        import traceback
+
+        try:
+            import ipdb as pdb
+        except ImportError:
+            import pdb
+
+        traceback.print_exc()
+        pdb.post_mortem()
 
 
 def arg_main():
@@ -21,15 +41,11 @@ def arg_main():
 
     args = parser.parse_args()
 
-    try:
-        main(args)
-    except Exception:
+    with contextlib.ExitStack() as stack:
         if args.pdb:
-            import pdb, traceback
+            stack.enter_context(debug_on_except())
 
-            traceback.print_exc()
-            pdb.post_mortem()
-        raise
+        main(args)
 
 
 if __name__ == "__main__":
