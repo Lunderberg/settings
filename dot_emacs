@@ -1194,9 +1194,11 @@
 ;; Projectile to find all project-specific files, helm to use a nicer
 ;; fuzzy search.
 (use-package helm-projectile
-    :ensure t
-    :commands (helm-projectile-find-file)
-    :bind ("C-c p f" . helm-projectile-find-file))
+  :ensure t
+  ;; Explicit path to include https://github.com/bbatsov/projectile/pull/1869
+  :load-path "~/misc/projectile"
+  :commands (helm-projectile-find-file)
+  :bind ("C-c p f" . helm-projectile-find-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      slack customizations           ;;;
