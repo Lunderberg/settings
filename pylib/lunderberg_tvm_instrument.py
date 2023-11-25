@@ -121,7 +121,7 @@ class PrintTransformSequence:
             print_before_after = self._print_before_after(info.name)
             if print_before_after:
                 self.print_header(f"Before {info.name}")
-                self.print_mod(mod)
+                self.print_mod(mod, name=f"ModBefore{info.name}")
                 self.print_footer()
             else:
                 self.print_header(f"{info.name}")
@@ -136,7 +136,7 @@ class PrintTransformSequence:
             print_before_after = self._print_before_after(info.name)
             if print_before_after:
                 self.print_header(f"After {info.name}")
-                self.print_mod(mod)
+                self.print_mod(mod, name=f"ModAfter{info.name}")
                 self.print_footer()
 
     def print_header(self, header):
@@ -158,8 +158,8 @@ class PrintTransformSequence:
         footer = "-" * self.div_length
         print(self._indent() + footer, flush=True)
 
-    def as_tvmscript(self, mod):
-        text = mod.script(syntax_sugar=True)
+    def as_tvmscript(self, mod, name=None):
+        text = mod.script(syntax_sugar=True, show_meta=False, name=name)
 
         if self.max_blacken_length is None or len(text) < self.max_blacken_length:
             with contextlib.suppress(black.InvalidInput):
@@ -174,7 +174,7 @@ class PrintTransformSequence:
                 )
         return text
 
-    def print_mod(self, mod):
+    def print_mod(self, mod, name=None):
         def print_tir():
             text = []
             for name, func in sorted(
@@ -184,7 +184,7 @@ class PrintTransformSequence:
             return "\n".join(text)
 
         if self.print_style == "tvmscript":
-            text = self.as_tvmscript(mod)
+            text = self.as_tvmscript(mod, name)
 
         elif self.print_style == "tir":
             text = print_tir()
