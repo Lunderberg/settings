@@ -6,6 +6,7 @@
 
 import argparse
 import contextlib
+import sys
 
 
 def main(args):
@@ -17,18 +18,16 @@ def debug_on_except():
     try:
         yield
     finally:
-        if sys.exc_info() == (None, None, None):
-            return
+        if isinstance(sys.exc_info(), Exception):
+            import traceback
 
-        import traceback
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
 
-        try:
-            import ipdb as pdb
-        except ImportError:
-            import pdb
-
-        traceback.print_exc()
-        pdb.post_mortem()
+            traceback.print_exc()
+            pdb.post_mortem()
 
 
 def arg_main():
