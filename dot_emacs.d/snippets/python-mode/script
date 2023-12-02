@@ -18,7 +18,7 @@ def debug_on_except():
     try:
         yield
     finally:
-        if isinstance(sys.exc_info(), Exception):
+        if isinstance(sys.exc_info()[1], Exception):
             import traceback
 
             try:
