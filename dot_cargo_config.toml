@@ -4,3 +4,6 @@
 
 # For gcc older than 12.1.0
 rustflags = ["-C", "link-arg=-B/usr/local/libexec/mold"]
+
+[build]
+incremental = false

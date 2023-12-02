@@ -705,7 +705,10 @@
   :ensure t
   :hook
   (c-mode-common . lsp)
-  (python-mode . lsp)
+  ;; Both jedi-language-server and the resulting syntax highlighting
+  ;; can be very slow on large python files.  Limiting the file size
+  ;; to 32 kB avoids locking emacs up as a result.
+  ;; (python-mode . (lambda () (when (< (buffer-size) (* 1024 64)) (lsp))))
   :init
   (setq lsp-keymap-prefix "C-c C-d")
   :config
@@ -1149,6 +1152,9 @@
   (setq rust-format-on-save t)
   (setq lsp-rust-server 'rust-analyzer)
   (setq lsp-rust-analyzer-server-command '("rustup" "run" "nightly" "rust-analyzer"))
+  (setq lsp-rust-analyzer-proc-macro-enable t)
+  (setq lsp-rust-analyzer-experimental-proc-attr-macros t)
+  (setq lsp-completion-provider :none)
   :hook
   (rust-mode . lsp)
   )
@@ -1191,9 +1197,11 @@
 ;; Projectile to find all project-specific files, helm to use a nicer
 ;; fuzzy search.
 (use-package helm-projectile
-    :ensure t
-    :commands (helm-projectile-find-file)
-    :bind ("C-c p f" . helm-projectile-find-file))
+  :ensure t
+  ;; Explicit path to include https://github.com/bbatsov/projectile/pull/1869
+  :load-path "~/misc/projectile"
+  :commands (helm-projectile-find-file)
+  :bind ("C-c p f" . helm-projectile-find-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      slack customizations           ;;;
