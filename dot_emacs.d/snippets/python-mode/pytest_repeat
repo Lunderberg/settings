@@ -1,0 +1,11 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: pytest run test repeatedly
+# key: pytest_repeat
+# group: debug
+# --
+import pytest
+
+
+@pytest.fixture(autouse=True, params=list(range(100)))
+def _repeat_test():
+    pass
