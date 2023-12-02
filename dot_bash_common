@@ -61,6 +61,7 @@ export HISTFILESIZE=10000
 
 # TVM-specific settings
 export TVM_PYGMENTIZE_STYLE=dracula
+export TVM_BLACK_FORMAT=1
 
 #Make handling the DISPLAY variable a bit easier with tmux.  This will
 #update the current shell to have the same DISPLAY variable as the
