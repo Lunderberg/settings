@@ -708,7 +708,7 @@
   ;; Both jedi-language-server and the resulting syntax highlighting
   ;; can be very slow on large python files.  Limiting the file size
   ;; to 32 kB avoids locking emacs up as a result.
-  ;; (python-mode . (lambda () (when (< (buffer-size) (* 1024 64)) (lsp))))
+  (python-mode . (lambda () (when (< (buffer-size) (* 1024 64)) (lsp))))
   :init
   (setq lsp-keymap-prefix "C-c C-d")
   :config
