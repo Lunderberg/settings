@@ -126,6 +126,9 @@
 ;; Prefer side-by-side display, unless the window is already narrow
 (setq split-width-threshold 160)
 (setq split-height-threshold nil)
+;; Any integer here tells helm to use `split-window-sensibly` instead
+;; of its own heuristics.
+(setq helm-split-width-threshold 1)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
