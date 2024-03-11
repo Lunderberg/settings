@@ -124,8 +124,19 @@
 
 
 ;; Prefer side-by-side display, unless the window is already narrow
-(setq split-width-threshold 160)
+;;
+;; Split-width-threshold used to be set at 160, to allow two
+;; side-by-side windows for standard 80-character lines.  However,
+;; magit-log is implemented with each column in its own window, and
+;; (window-width) only returns the width of the log column.  On my
+;; laptop, this brings the apparent width down from 165 to 135, but I
+;; still want it to split left/right.
+(setq split-width-threshold 120)
 (setq split-height-threshold nil)
+
+;; Any integer here tells helm to use `split-window-sensibly` instead
+;; of its own heuristics.
+(setq helm-split-width-threshold 1)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -123,8 +123,11 @@ class PrintTransformSequence:
         return " " * (4 * self.nesting_level)
 
     def run_before_pass(self, mod, info):
-        self.current_nested_passes.append(info.name)
-        if self.transforms is None or info.name in self.transforms:
+
+        if (self.transforms is None or info.name in self.transforms) and (
+            self.ignore_passes_inside is None
+            or (self.ignore_passes_inside not in self.current_nested_passes)
+        ):
             print_before_after = self._print_before_after(info.name)
             if print_before_after:
                 self.print_header(f"Before {info.name}")
@@ -134,10 +137,14 @@ class PrintTransformSequence:
                 self.print_header(f"{info.name}")
 
             self.nesting_level += 1
+        self.current_nested_passes.append(info.name)
 
     def run_after_pass(self, mod, info):
         self.current_nested_passes.pop()
-        if self.transforms is None or info.name in self.transforms:
+        if (self.transforms is None or info.name in self.transforms) and (
+            self.ignore_passes_inside is None
+            or (self.ignore_passes_inside not in self.current_nested_passes)
+        ):
             self.nesting_level -= 1
 
             print_before_after = self._print_before_after(info.name)
