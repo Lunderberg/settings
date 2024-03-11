@@ -40,6 +40,7 @@ class PrintTransformSequence:
         max_blacken_length=64 * 1024,
         max_pygments_length=16 * 1024,
         ignore_passes_inside=None,
+        only_show_functions=None,
     ):
         """Construct the Instrumenter
 
@@ -84,6 +85,10 @@ class PrintTransformSequence:
             The maximum length of a module, in bytes, in order to
             apply `pygments.highligh` on it.  If `None`, no limit is
             applied.
+
+        only_show_functions: Optional[Union[str,List[str]]]
+
+            Only show functions that have the specified name.
         """
         if isinstance(transforms, str):
             self.transforms = [transforms]
@@ -93,6 +98,8 @@ class PrintTransformSequence:
         self.nesting_level = 0
         self.current_nested_passes = []
         self.print_before_after = print_before_after
+        self.only_show_functions = only_show_functions
+
         self.div_length = 40
         self.print_style = print_style
         self.pygments_style = pygments_style
@@ -160,6 +167,50 @@ class PrintTransformSequence:
 
     def as_tvmscript(self, mod, name=None):
         text = mod.script(syntax_sugar=True, show_meta=False, name=name)
+
+        # Removing the functions before calling mod.script would be
+        # cleaner, but could result in use of undefined GlobalVar,
+        # which I think would cause issues.
+        if self.only_show_functions is not None:
+            function_names = (
+                [self.only_show_functions]
+                if isinstance(self.only_show_functions, str)
+                else self.only_show_functions
+            )
+            lines = text.split("\n")
+            function_starts = [
+                i for i, line in enumerate(lines) if line.startswith("    def ")
+            ]
+
+            for function_start in reversed(function_starts):
+                keep_function = any(
+                    lines[function_start].startswith(f"    def {name}(")
+                    for name in function_names
+                )
+                if keep_function:
+                    continue
+
+                if function_start == function_starts[-1]:
+                    next_function_start = len(lines)
+                else:
+                    next_function_start = min(
+                        f for f in function_starts if f > function_start
+                    )
+                    while lines[next_function_start].strip():
+                        next_function_start -= 1
+
+                lines[function_start + 1 : next_function_start] = []
+
+                start_of_annotations = function_start
+                while lines[start_of_annotations - 1].startswith("    @"):
+                    start_of_annotations -= 1
+
+                lines[start_of_annotations : function_start + 1] = [
+                    "    # " + line[4:]
+                    for line in lines[start_of_annotations : function_start + 1]
+                ]
+
+            text = "\n".join(lines)
 
         if self.max_blacken_length is None or len(text) < self.max_blacken_length:
             with contextlib.suppress(black.InvalidInput):
