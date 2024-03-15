@@ -131,12 +131,18 @@
 ;; (window-width) only returns the width of the log column.  On my
 ;; laptop, this brings the apparent width down from 165 to 135, but I
 ;; still want it to split left/right.
-(setq split-width-threshold 120)
+;;
+;; However, my work monitor is 127 characters when split left/right,
+;; and I want to avoid having more than one left/right split.
+(setq split-width-threshold 128)
 (setq split-height-threshold nil)
 
-;; Any integer here tells helm to use `split-window-sensibly` instead
-;; of its own heuristics.
-(setq helm-split-width-threshold 1)
+;; Using nil for helm-split-width-threshold tells helm to use
+;; `split-window-sensibly` instead of its own heuristics.  The
+;; documentation is currently incorrect, which states that an integer
+;; value is required to use `split-window-sensibly`.
+(setq helm-split-width-threshold nil)
+(setq helm-split-window-default-side 'right)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
