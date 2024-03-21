@@ -41,7 +41,7 @@ def format_timedelta(d):
 
 # Adapted from https://stackoverflow.com/a/69582478/2689797
 def get_cursor_pos():
-    if not sys.stdin.isatty():
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
         return None
 
     old_attrs = termios.tcgetattr(sys.stdin)
