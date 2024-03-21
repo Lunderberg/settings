@@ -32,6 +32,23 @@ if python3 -c "import ipdb" 2> /dev/null; then
     export PYTEST_ADDOPTS='--pdbcls=IPython.terminal.debugger:TerminalPdb'
 fi
 
+# Produce poetry environments in each project.  Because, you know,
+# they're specific to a project.
+export POETRY_VIRTUALENVS_IN_PROJECT=1
+
+# Use whichever `python3` is currently in use, not whichever one was
+# used to install `poetry` however long ago it was.
+export POETRY_VIRTUALENVS_PREFER_ACTIVE_PYTHON=1
+
+# TODO: Find a way to add local dev tools to every poetry environment.
+# I shouldn't need to update a repo's `pyproject.toml` in order to
+# install my own preferred debugging tools (e.g. `ipython` and
+# `ipdb`).  I can either use `export
+# POETRY_VIRTUALENVS_OPTIONS_SYSTEM_SITE_PACKAGES=1` to expose
+# *everything* in my local environment, or can use `poetry run python3
+# -mpip install` after making the virtual environment.  However, both
+# of those would be way too coarse of a tool.
+
 
 # Prevent pip popup unnecessarily asking to unlock the "kdewallet"
 # keyring.
