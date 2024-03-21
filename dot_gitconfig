@@ -23,3 +23,5 @@
 # Currently used for work name/email on work account.
 [include]
         path = ~/.gitconfig_local
+[url "git@github.com:"]
+	insteadOf = https://github.com/
