@@ -1218,7 +1218,13 @@
   ;; Explicit path to include https://github.com/bbatsov/projectile/pull/1869
   :load-path "~/misc/projectile"
   :commands (helm-projectile-find-file)
-  :bind ("C-c p f" . helm-projectile-find-file))
+  :bind ("C-c p f" . helm-projectile-find-file)
+  :config
+  ;; Bugfix for projectile compatibility with fd older than version 8.3.0
+  ;; See: https://github.com/bbatsov/projectile/issues/1788
+  (setq projectile-generic-command "fd . -0 --type f --color=never")
+  (setq projectile-git-fd-args "-H -0 -E .git -tf")
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      slack customizations           ;;;
