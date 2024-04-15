@@ -733,15 +733,23 @@
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
 
-  ;; TODO: Run the check for ffi-navigator asynchronously
-  (when (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil))
-    (lsp-register-client
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection
+                     '("python3" "-m" "ffi_navigator.langserver")
+                     (lambda () (= 0 (call-process-shell-command "pip3 list | grep ffi-navigator" nil nil nil)))
+                     )
+    :major-modes '(python-mode c++-mode)
+    :server-id 'ffi-navigator
+    :add-on? t))
+
+  ;; python -mpip install ruff-lsp
+  (lsp-register-client
      (make-lsp-client
-      :new-connection (lsp-stdio-connection '("python3" "-m" "ffi_navigator.langserver"))
-      :major-modes '(python-mode c++-mode)
-      :server-id 'ffi-navigator
-      :add-on? t))
-    )
+      :new-connection (lsp-stdio-connection '("ruff-lsp"))
+      :major-modes '(python-mode)
+      :add-on? t
+      :server-id 'ruff))
   )
 
 (use-package lsp-ui
@@ -1031,9 +1039,30 @@
                ))
   )
 
-(use-package blacken
-  :ensure t
-  :hook (python-mode . blacken-mode))
+;; Auto-format using `black`
+;;     python3 -mpip install black
+;;
+;; (use-package blacken
+;;   :ensure t
+;;   :hook (python-mode . blacken-mode))
+
+;; Auto-format using `ruff format`.
+;;    python3 -mpip install ruff
+(when (= 0 (call-process-shell-command "which ruff" nil nil nil))
+  (use-package reformatter
+    :ensure t
+    :hook
+    (python-mode . ruff-format-on-save-mode)
+    :config
+    (reformatter-define ruff-format
+                        :program "ruff"
+                        :args `("format" "--stdin-filename" ,buffer-file-name "-")))
+
+  (use-package flymake-ruff
+    :ensure t
+    :hook (python-mode . flymake-ruff-load))
+  )
+
 
 
 
