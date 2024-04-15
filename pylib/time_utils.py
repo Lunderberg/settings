@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+import functools
 import re
 import sys
 import termios
@@ -92,6 +93,14 @@ class Timer:
         self.end_time = None
 
         self.is_running = False
+
+    def __call__(self, func):
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            with self:
+                return func(*args, **kwargs)
+
+        return inner
 
     def __enter__(self):
         self.start()
