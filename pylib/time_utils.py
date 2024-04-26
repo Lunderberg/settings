@@ -2,7 +2,6 @@
 
 import datetime
 import functools
-import logging
 import re
 import sys
 import termios
@@ -12,7 +11,6 @@ from typing import Optional
 try:
     import nvtx
 except ImportError:
-    logging.warn("NVTX library not found, will not be used")
     nvtx = None
 
 
