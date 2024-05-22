@@ -24,6 +24,7 @@ import black
 import pygments
 import pygments.formatters
 import pygments.lexers.python
+import subprocess
 
 import tvm.relay
 from tvm.ir.instrument import pass_instrument
@@ -123,7 +124,6 @@ class PrintTransformSequence:
         return " " * (4 * self.nesting_level)
 
     def run_before_pass(self, mod, info):
-
         if (self.transforms is None or info.name in self.transforms) and (
             self.ignore_passes_inside is None
             or (self.ignore_passes_inside not in self.current_nested_passes)
@@ -219,9 +219,22 @@ class PrintTransformSequence:
 
             text = "\n".join(lines)
 
-        if self.max_blacken_length is None or len(text) < self.max_blacken_length:
-            with contextlib.suppress(black.InvalidInput):
-                text = black.format_str(text, mode=black.FileMode())
+        # if self.max_blacken_length is None or len(text) < self.max_blacken_length:
+        # with contextlib.suppress(black.InvalidInput):
+        #     text = black.format_str(text, mode=black.FileMode())
+
+        proc = subprocess.Popen(
+            [
+                "ruff",
+                "format",
+                "--stdin-filename=TVMScript",
+                "--line-length=88",
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding="utf-8",
+        )
+        text, _ = proc.communicate(text)
 
         if self.pygments_style is not None:
             if self.max_pygments_length is None or len(text) < self.max_pygments_length:
