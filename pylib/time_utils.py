@@ -171,8 +171,6 @@ class Timer:
             self._nvtx_context = nvtx.annotate(self.message)
             self._nvtx_context.__enter__()
 
-        self.is_running = False
-
     def stop(self, exc_type=None, exc_val=None, exc_tb=None):
         if not self.is_running:
             return
