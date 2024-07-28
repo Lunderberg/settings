@@ -6,6 +6,7 @@ dist
 dot_emacs.d/tramp
 dot_emacs.d/.org-id-locations
 dot_emacs.d/ede-projects.el
+dot_emacs.d/eln-cache
 dot_emacs.d/elpa
 dot_emacs.d/.emacs.desktop
 dot_emacs.d/.emacs.desktop.lock
