@@ -56,6 +56,28 @@ export POETRY_VIRTUALENVS_PREFER_ACTIVE_PYTHON=1
 # https://github.com/pypa/pip/issues/8090#issuecomment-803363268
 export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 
+# Ignore the `EXTERNALLY-MANAGED` file.  When present, this file
+# prevents using pip to install packages, as they are already managed
+# by the distro.  I like this functionality, except that it also
+# prevents installing packages to the ~/.local/lib directory with
+# `python3 -mpip install --user`.
+#
+# The rationale is that a system utility may be run as a user, and may
+# rely on `import foo` importing a specific distro-provided version of
+# `foo`.  By allowing installs to ~/.local/lib, a user running the
+# utility that relies on the distro's `python3` may accidentally
+# override the `import foo`.  But such a utility should be running
+# with the `-I` flag for an isolated environment anyways, since a
+# local `foo.py` file would cause the exact same issue.
+#
+# I wish there were a way to block accidental installation to
+# /usr/lib/python3* while still allowing use of user-specific package
+# installs, but it doesn't seem like there is.
+#
+# See https://discuss.python.org/t/pep-668-marking-python-base-environments-as-externally-managed/10302/103
+# for more details.
+export PIP_BREAK_SYSTEM_PACKAGES=1
+
 if [ "$TERM" != "dumb" ]; then
     if [ -n "$TMUX" ]; then
         export TERM=screen-256color
