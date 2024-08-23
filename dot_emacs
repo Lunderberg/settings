@@ -315,8 +315,7 @@
 (defun just-one-space-with-newline ()
   (interactive)
   (just-one-space -1))
-(global-set-key [remap just-one-space]
-                'just-one-space-with-newline)
+(global-set-key (kbd "M-SPC") 'just-one-space-with-newline)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
