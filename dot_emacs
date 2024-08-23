@@ -1022,6 +1022,11 @@
   :bind (:map python-mode-map
               ("C-c C-c" . execute-current-buffer)
               ("C-c C-d" . nil)
+              ("C-c TAB" . nil)
+              ;; ("C-c TAB a" . nil)
+              ;; ("C-c TAB f" . nil)
+              ;; ("C-c TAB r" . nil)
+              ;; ("C-c TAB s" . nil)
               )
   :config
 
