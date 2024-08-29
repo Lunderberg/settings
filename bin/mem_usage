@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+
+import argparse
+import contextlib
+import itertools
+import os
+import re
+import sys
+
+from typing import Optional
+
+import psutil
+
+
+def find_proc(
+    pid: Optional[int], name: Optional[str], cmd_regex: Optional[str]
+) -> psutil.Process:
+    if pid is None:
+        proc_iter = psutil.process_iter()
+    else:
+        proc_iter = [psutil.Process(pid)]
+
+    def _is_match(proc: psutil.Process) -> bool:
+        filters = [
+            lambda: proc.pid != os.getpid(),
+            lambda: (name is None or proc.name() == name),
+            lambda: cmd_regex is None or re.search(cmd_regex, " ".join(proc.cmdline())),
+        ]
+        return all(filter() for filter in filters)
+
+    matches = [proc for proc in proc_iter if _is_match(proc)]
+    assert len(matches) >= 1, "Could not find matching process"
+
+    return min(matches, key=lambda proc: proc.create_time())
+
+
+def main(args):
+    proc = find_proc(pid=args.pid, name=args.name, cmd_regex=args.cmd)
+
+    mem_usage_bytes = 0
+    have_sufficient_permissions = True
+
+    proc_iter = [proc]
+    if args.include_children:
+        proc_iter = itertools.chain(proc_iter, proc.children(recursive=True))
+
+    for proc in proc_iter:
+        try:
+            mem_info = proc.memory_full_info()
+        except psutil.AccessDenied:
+            have_sufficient_permissions = False
+            continue
+
+        # mem_usage_bytes += mem_info.pss
+        mem_usage_bytes += mem_info.rss
+
+    symbol = "==" if have_sufficient_permissions else ">="
+
+    print(f"Memory usage {symbol} {mem_usage_bytes} bytes")
+    print(f"Memory usage {symbol} {mem_usage_bytes / (1024**3)} GB")
+
+
+@contextlib.contextmanager
+def debug_on_except():
+    try:
+        yield
+    finally:
+        if isinstance(sys.exc_info()[1], Exception):
+            import traceback
+
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
+
+            traceback.print_exc()
+            pdb.post_mortem()
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p",
+        "--pid",
+        type=int,
+        default=None,
+        help="The PID of the program to inspect",
+    )
+    parser.add_argument(
+        "-c",
+        "--cmd",
+        type=str,
+        default=None,
+        help="A regex matching the PID of the program to inspect",
+    )
+    parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        default=None,
+        help="The name of the program to inspect",
+    )
+    parser.add_argument(
+        "--skip-children",
+        action="store_false",
+        dest="include_children",
+        default=True,
+        help="Only include the process itself, without including child processes",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    with contextlib.ExitStack() as stack:
+        if args.pdb:
+            stack.enter_context(debug_on_except())
+
+        main(args)
+
+
+if __name__ == "__main__":
+    arg_main()
