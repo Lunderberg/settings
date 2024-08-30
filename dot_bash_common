@@ -122,6 +122,14 @@ if which ccache > /dev/null; then
     export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
 fi
 
+# `git lfs` cannot run at all if it isn't enabled by default with
+# `git lfs install`.  I want to selectively download large files,
+# without having them automatically downloaded on `git clone`.
+# Therefore, I need to disable `git lfs` through an environment
+# variable, since its configuration cannot be removed without
+# disabling it entirely.
+export GIT_LFS_SKIP_SMUDGE=1
+
 # Extract symbols from .so file
 alias symbols="nm --demangle --extern-only --dynamic"
 alias undefined_symbols="ldd --function-relocs"
