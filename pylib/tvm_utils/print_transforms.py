@@ -28,6 +28,8 @@ import pygments.lexers.python
 import tvm.relay
 from tvm.ir.instrument import pass_instrument
 
+from tvm.script.highlight import _get_formatter as get_formatter
+
 
 @pass_instrument
 class PrintTransforms:
@@ -219,8 +221,9 @@ class PrintTransforms:
             text = "\n".join(lines)
 
         if self.max_blacken_length is None or len(text) < self.max_blacken_length:
+            formatter = get_formatter()
             with contextlib.suppress(black.InvalidInput):
-                text = black.format_str(text, mode=black.FileMode())
+                text = formatter(text)
 
         if self.pygments_style is not None:
             if self.max_pygments_length is None or len(text) < self.max_pygments_length:
