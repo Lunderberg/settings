@@ -51,6 +51,9 @@ def main(args):
         # Specify the output as the ALSA audio driver.
         "--type",
         "alsa",
+        # Larger buffer to avoid some "WARN alsa: under-run" errors
+        "--buffer",
+        "65536",
         # Do not show a progress bar
         "--no-show-progress",
         # The sound itself
@@ -63,6 +66,7 @@ def main(args):
     for i in iterable:
         if args.verbose:
             print(f"{datetime.datetime.now()}: Playing sound {i}")
+            print(f"\t{' '.join(cmd)}")
         subprocess.check_call(cmd)
         time.sleep(args.sleep_seconds)
 
