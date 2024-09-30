@@ -16,6 +16,18 @@ def very_verbose():
     context = PrintTransforms.context()
     with context:
         yield
+
+# Print each transform, and verify well-formed
+from tvm_utils import PrintTransforms
+from tvm.relax.ir.instrument import WellFormedInstrument
+
+with tvm.transform.PassContext(
+    instruments=[
+        PrintTransforms(),
+        WellFormedInstrument(),
+    ]
+):
+    lib = relay.vm.compile(mod, target="llvm -mcpu=cascadelake", params=params)
 """
 
 import contextlib
@@ -43,6 +55,7 @@ class PrintTransforms:
         max_pygments_length=16 * 1024,
         ignore_passes_inside=None,
         only_show_functions=None,
+        show_all_struct_info: bool = True,
     ):
         """Construct the Instrumenter
 
@@ -91,6 +104,13 @@ class PrintTransforms:
         only_show_functions: Optional[Union[str,List[str]]]
 
             Only show functions that have the specified name.
+
+        show_all_struct_info: bool
+
+            If true (default), show the struct info of all
+            expressions.  If false, only show struct info for expressions
+            whose struct info cannot be inferred.
+
         """
         if isinstance(transforms, str):
             self.transforms = [transforms]
@@ -109,6 +129,8 @@ class PrintTransforms:
         self.max_blacken_length = max_blacken_length
         self.max_pygments_length = max_pygments_length
         self.ignore_passes_inside = ignore_passes_inside
+
+        self.show_all_struct_info = show_all_struct_info
 
     @classmethod
     def context(cls, *args, **kwargs):
@@ -174,7 +196,12 @@ class PrintTransforms:
         print(self._indent() + footer, flush=True)
 
     def as_tvmscript(self, mod, name=None):
-        text = mod.script(syntax_sugar=True, show_meta=False, name=name)
+        text = mod.script(
+            syntax_sugar=True,
+            show_meta=False,
+            name=name,
+            show_all_struct_info=self.show_all_struct_info,
+        )
 
         # Removing the functions before calling mod.script would be
         # cleaner, but could result in use of undefined GlobalVar,
