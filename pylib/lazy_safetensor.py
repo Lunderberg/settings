@@ -5,11 +5,13 @@ import ctypes
 import glob
 import json
 import io
+import itertools
 import math
 import os
 import pathlib
 import re
 import struct
+import textwrap
 import typing
 from typing import Callable, Dict, List, Optional, Union, Iterable, Iterator
 
@@ -76,7 +78,39 @@ class _GlobMixIn:
                 yield tensor
 
 
-class LazySafetensorCollection(_GlobMixIn):
+class _OrderedIndexMixIn:
+    def __init_subclass__(cls):
+        old_getitem = cls.__getitem__
+
+        def __getitem__(self, index_or_name: Union[int, str]) -> "LazySafetensor":
+            if isinstance(index_or_name, int):
+                # Relies on python 3.7+ providing a guarantee that
+                # dictionaries will be ordered.
+                values = self.values()
+                try:
+                    for _ in range(index_or_name):
+                        next(values)
+                    return next(values)
+                except StopIteration:
+                    raise IndexError("list index out of range")
+
+            elif isinstance(index_or_name, slice):
+                return list(
+                    itertools.islice(
+                        self.values(),
+                        index_or_name.start,
+                        index_or_name.stop,
+                        index_or_name.step,
+                    )
+                )
+
+            else:
+                return old_getitem(self, index_or_name)
+
+        cls.__getitem__ = __getitem__
+
+
+class LazySafetensorCollection(_GlobMixIn, _OrderedIndexMixIn):
     def __init__(
         self,
         *safetensor_files: Iterable[Union[str, pathlib.Path, "LazySafetensorFile"]],
@@ -135,6 +169,9 @@ class LazySafetensorCollection(_GlobMixIn):
         for key in self.keys():
             yield key, self[key]
 
+    def num_files(self) -> int:
+        return len(self._safetensor_files)
+
 
 class LazySafetensorDir(LazySafetensorCollection):
     def __init__(self, dirpath: Union[str, pathlib.Path]):
@@ -142,7 +179,7 @@ class LazySafetensorDir(LazySafetensorCollection):
         super().__init__(self.dirpath)
 
 
-class LazySafetensorFile(_GlobMixIn):
+class LazySafetensorFile(_GlobMixIn, _OrderedIndexMixIn):
     def __init__(self, filepath: Union[str, pathlib.Path]):
         filepath = pathlib.Path(filepath)
         self.filepath = filepath
@@ -318,7 +355,42 @@ class LazySafetensor:
 
 def main(args):
     safetensors = LazySafetensorCollection(*args.safetensor_files)
-    __import__("IPython").embed(colors="neutral")
+
+    if not args.quiet:
+        print(
+            "Found {num_tensors} {tensor_noun} in {num_files} {file_noun}".format(
+                num_tensors=len(safetensors),
+                tensor_noun="tensor" if len(safetensors) == 1 else "tensors",
+                num_files=safetensors.num_files(),
+                file_noun="file" if safetensors.num_files() == 1 else "files",
+            )
+        )
+
+        print(
+            textwrap.dedent(
+                """
+                Tensors may be inspected through the `safetensors` object.
+
+                Examples:
+
+                    # Print first three tensors
+                    print(safetensors[:3])
+
+                    # Print all tensors from layer 5
+                    print(safetensors.glob('*.layers.5.*'))
+
+                    # Print a specific tensor by name
+                    print(safetensors['model.lm_head.weight'])
+
+                (Pass the -q or --quiet flag to disable this startup message.)
+                """
+            ).lstrip()
+        )
+
+    try:
+        __import__("IPython").embed(colors="neutral")
+    except ImportError:
+        __import__("code").interact(local=locals())
 
 
 def arg_main():
@@ -349,6 +421,12 @@ def arg_main():
         default=[pathlib.Path(".")],
         nargs="*",
         help="The file or directory to inspect",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Silence the startup messages",
     )
     parser.add_argument(
         "--pdb",
