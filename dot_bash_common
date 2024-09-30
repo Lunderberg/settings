@@ -148,6 +148,7 @@ if which ccache > /dev/null; then
     export CMAKE_CXX_COMPILER_LAUNCHER=ccache
     export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
 fi
+export CMAKE_EXPORT_COMPILE_COMMANDS=1
 
 # `git lfs` cannot run at all if it isn't enabled by default with
 # `git lfs install`.  I want to selectively download large files,
