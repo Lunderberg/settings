@@ -78,13 +78,6 @@ export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 # for more details.
 export PIP_BREAK_SYSTEM_PACKAGES=1
 
-if [ "$TERM" != "dumb" ]; then
-    if [ -n "$TMUX" ]; then
-        export TERM=screen-256color
-    else
-        export TERM=xterm-256color
-    fi
-fi
 
 # Select a color for the user and server, random based on hostname.
 if which pseudorandom_console_color.py > /dev/null; then
