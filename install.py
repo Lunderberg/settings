@@ -11,9 +11,9 @@ import sys
 import urllib.request
 import zipfile
 
-pylib_path = str(pathlib.Path(__file__).parent.joinpath('pylib').resolve())
+pylib_path = str(pathlib.Path(__file__).parent.joinpath("pylib").resolve())
 sys.path.append(pylib_path)
-os.environ['PYTHONPATH'] = ':'.join([os.environ.get('PYTHONPATH',''),pylib_path])
+os.environ["PYTHONPATH"] = ":".join([os.environ.get("PYTHONPATH", ""), pylib_path])
 from install_utils import Installer
 
 installer = Installer(__file__)
@@ -158,7 +158,6 @@ def run_private_install():
 
 
 def main(args):
-    git_submodule_update()
     download_clangd()
 
     install_dotfiles()
@@ -167,6 +166,7 @@ def main(args):
     update_bashrc()
     update_docker_config()
 
+    git_submodule_update()
     run_private_install()
 
 

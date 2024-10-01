@@ -685,9 +685,9 @@
   :commands (ansi-color-apply-on-region))
 
 (defun colorize-compilation-buffer ()
-  (toggle-read-only)
-  (ansi-color-apply-on-region (point-min) (point-max))
-  (toggle-read-only))
+  (let ((buffer-read-only nil))
+    (ansi-color-apply-on-region (point-min) (point-max))
+    ))
 
 (defun colorize-current-buffer ()
   (interactive)

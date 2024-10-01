@@ -78,13 +78,18 @@ export PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring
 # for more details.
 export PIP_BREAK_SYSTEM_PACKAGES=1
 
-if [ "$TERM" != "dumb" ]; then
-    if [ -n "$TMUX" ]; then
-        export TERM=screen-256color
-    else
-        export TERM=xterm-256color
-    fi
-fi
+# By default, Triton dumps everything into the `$HOME/.triton` folder,
+# which is pretty bad behavior given how large this folder can become.
+# During installation, it uses `$TRITON_HOME/.triton` as a download
+# location for temporary files, which are never cleaned up.  During
+# runtime, it uses either `$TRITON_CACHE_DIR` or
+# `$TRITON_HOME/.triton/cache` to store compiled kernels for re-use on
+# a later usage.  Thi
+export TRITON_HOME=$HOME/.cache/triton
+export TRITON_OVERRIDE_DIR=$HOME/.config/triton/overrides
+export TRITON_CACHE_DIR=$HOME/.cache/triton/kernels
+export TRITON_DUMP_DIR=$HOME/.cache/triton/dumps
+# export TRITON_ALWAYS_COMPILE=1
 
 # Select a color for the user and server, random based on hostname.
 if which pseudorandom_console_color.py > /dev/null; then
@@ -143,6 +148,15 @@ if which ccache > /dev/null; then
     export CMAKE_CXX_COMPILER_LAUNCHER=ccache
     export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
 fi
+export CMAKE_EXPORT_COMPILE_COMMANDS=1
+
+# `git lfs` cannot run at all if it isn't enabled by default with
+# `git lfs install`.  I want to selectively download large files,
+# without having them automatically downloaded on `git clone`.
+# Therefore, I need to disable `git lfs` through an environment
+# variable, since its configuration cannot be removed without
+# disabling it entirely.
+export GIT_LFS_SKIP_SMUDGE=1
 
 # Extract symbols from .so file
 alias symbols="nm --demangle --extern-only --dynamic"
