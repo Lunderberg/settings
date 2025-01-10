@@ -722,7 +722,8 @@
 (use-package lsp-mode
   :ensure t
   :hook
-  (c-mode-common . lsp)
+  (c-mode . lsp)
+  (c++-mode . lsp)
   ;; Both jedi-language-server and the resulting syntax highlighting
   ;; can be very slow on large python files.  Limiting the file size
   ;; to 32 kB avoids locking emacs up as a result.
