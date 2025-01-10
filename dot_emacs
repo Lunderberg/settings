@@ -317,6 +317,10 @@
   (just-one-space -1))
 (global-set-key (kbd "M-SPC") 'just-one-space-with-newline)
 
+(use-package warnings
+  :config
+  (add-to-list 'warning-suppress-types '(undo discard-info))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;      hexl customizations           ;;;
@@ -492,7 +496,6 @@
   (setq org-log-done t)
   (setq org-startup-folded nil)
   (setq org-agenda-files (seq-filter 'file-exists-p '("~/todo.org" "~/TODO.org" "~/org")))
-  (add-to-list 'warning-suppress-types '(undo discard-info))
   (setq org-todo-keywords
         '((sequence "TODO" "WAITING" "|" "DONE" "CANCELLED")))
   )

@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+
+import argparse
+import contextlib
+import datetime
+import sys
+from typing import Union, Optional
+
+import psutil
+
+
+class ProcessTree:
+    def __init__(
+        self,
+        proc: Union[int, psutil.Process],
+        children: Optional[List[int, psutil.Process, ProcessTree]] = None,
+    ):
+        if not isinstance(proc, psutil.Process):
+            proc = psutil.Process(proc)
+
+        if children is None:
+            children = []
+        else:
+            children = [
+                child
+                if isinstance(child, ProcessTree)
+                else ProcessTree(child)
+                if isinstance(child, psutil.Process)
+                else ProcessTree(psutil.Process(child))
+                for child in children
+            ]
+
+        self.proc = proc
+        self.children = children
+
+    def print(self, indent: int = 0):
+        if indent:
+            arrow = "↳"
+            prefix = " " * (indent - 1) + arrow
+        else:
+            prefix = ""
+
+        cmdline = " ".join(self.proc.cmdline())
+        age = datetime.datetime.now() - datetime.datetime.fromtimestamp(
+            self.proc.create_time()
+        )
+        age_str = str(age).rsplit(".", maxsplit=1)[0]
+
+        print(f"{prefix}PID {self.proc.pid}, {age_str}: {cmdline}")
+
+        for child in self.children:
+            child.print(indent + 1)
+
+
+def iter_parents(proc):
+    while proc is not None:
+        yield proc
+        proc = proc.parent()
+
+
+def get_parent_tree(proc: psutil.Process):
+    tree = ProcessTree(proc)
+
+    while True:
+        proc = proc.parent()
+        if proc is None:
+            break
+
+        tree = ProcessTree(proc, [tree])
+
+    return tree
+
+
+def show_parents(proc):
+    arrow = "↳"
+
+    parents = list(iter_parents(proc))[::-1]
+
+    for i, parent in enumerate(parents):
+        if i > 0:
+            indent = " " * (i - 1) + arrow
+        else:
+            indent = ""
+
+        cmdline = " ".join(parent.cmdline())
+        age = datetime.datetime.now() - datetime.datetime.fromtimestamp(
+            parent.create_time()
+        )
+        age_str = str(age).rsplit(".", maxsplit=1)[0]
+
+        print(f"{indent}PID {parent.pid}, {age_str}: {cmdline}")
+
+
+def main(args):
+    for i, pid in enumerate(args.pid):
+        if i > 0:
+            print("-" * 40)
+        proc = psutil.Process(pid)
+
+        if args.show_children:
+            raise NotImplementedError()
+        else:
+            tree = get_parent_tree(proc)
+
+        tree.print()
+
+
+@contextlib.contextmanager
+def debug_on_except():
+    try:
+        yield
+    finally:
+        if isinstance(sys.exc_info()[1], Exception):
+            import traceback
+
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
+
+            traceback.print_exc()
+            pdb.post_mortem()
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "pid",
+        type=int,
+        nargs="+",
+        help="The PID to inspect",
+    )
+    parser.add_argument(
+        "--children",
+        action="store_true",
+        dest="show_children",
+        help="Show children of the PID, rather than parents.",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    with contextlib.ExitStack() as stack:
+        if args.pdb:
+            stack.enter_context(debug_on_except())
+
+        main(args)
+
+
+if __name__ == "__main__":
+    arg_main()
