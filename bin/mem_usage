@@ -14,7 +14,7 @@ import psutil
 
 def find_proc(
     pid: Optional[int], name: Optional[str], cmd_regex: Optional[str]
-) -> psutil.Process:
+) -> Optional[psutil.Process]:
     if pid is None:
         proc_iter = psutil.process_iter()
     else:
@@ -23,25 +23,77 @@ def find_proc(
     def _is_match(proc: psutil.Process) -> bool:
         filters = [
             lambda: proc.pid != os.getpid(),
-            lambda: (name is None or proc.name() == name),
+            lambda: (
+                name is None
+                or proc.name() == name
+                or re.match(f"^{name}$", proc.name())
+            ),
             lambda: cmd_regex is None or re.search(cmd_regex, " ".join(proc.cmdline())),
         ]
         return all(filter() for filter in filters)
 
     matches = [proc for proc in proc_iter if _is_match(proc)]
-    assert len(matches) >= 1, "Could not find matching process"
 
-    return min(matches, key=lambda proc: proc.create_time())
+    if matches:
+        return min(matches, key=lambda proc: proc.create_time())
+    else:
+        return None
 
 
 def main(args):
-    proc = find_proc(pid=args.pid, name=args.name, cmd_regex=args.cmd)
+    kwargs = dict(
+        pid=args.pid,
+        cmd_regex=args.cmd,
+        include_children=args.include_children,
+    )
+
+    show_total()
+    print()
+
+    if args.name:
+        for name in args.name:
+            show_proc(name=name, **kwargs)
+    else:
+        show_proc(name=None, **kwargs)
+
+
+def show_total():
+    mem_usage_bytes = 0
+    have_sufficient_permissions = True
+    for proc in psutil.process_iter():
+        try:
+            mem_info = proc.memory_full_info()
+        except psutil.AccessDenied:
+            have_sufficient_permissions = False
+            continue
+
+        mem_usage_bytes += mem_info.rss
+
+    symbol = "==" if have_sufficient_permissions else ">="
+    mem_usage_gigabytes = mem_usage_bytes / (1024**3)
+    print(
+        f"Total memory usage {symbol} {mem_usage_bytes} bytes ({mem_usage_gigabytes:.2f} GB)"
+    )
+
+
+def show_proc(
+    pid: Optional[int],
+    name: Optional[str],
+    cmd_regex: Optional[str],
+    include_children: bool,
+):
+    print_name = f"{name}: " if name else ""
+
+    proc = find_proc(pid=pid, name=name, cmd_regex=cmd_regex)
+    if proc is None:
+        print(f"{print_name}Not running")
+        return
 
     mem_usage_bytes = 0
     have_sufficient_permissions = True
 
     proc_iter = [proc]
-    if args.include_children:
+    if include_children:
         proc_iter = itertools.chain(proc_iter, proc.children(recursive=True))
 
     for proc in proc_iter:
@@ -55,9 +107,11 @@ def main(args):
         mem_usage_bytes += mem_info.rss
 
     symbol = "==" if have_sufficient_permissions else ">="
+    mem_usage_gigabytes = mem_usage_bytes / (1024**3)
 
-    print(f"Memory usage {symbol} {mem_usage_bytes} bytes")
-    print(f"Memory usage {symbol} {mem_usage_bytes / (1024**3)} GB")
+    print(
+        f"{print_name}Memory usage {symbol} {mem_usage_bytes} bytes ({mem_usage_gigabytes:.2f} GB)"
+    )
 
 
 @contextlib.contextmanager
@@ -97,7 +151,7 @@ def arg_main():
         "-n",
         "--name",
         type=str,
-        default=None,
+        action="append",
         help="The name of the program to inspect",
     )
     parser.add_argument(
