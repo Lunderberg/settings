@@ -674,6 +674,22 @@
   (setq lsp-eldoc-enable-hover nil)
   (setq lsp-signature-render-documentation nil)
 
+  ;; Do not execute a code action just because it is the only one
+  ;; available.  Given how code actions can apply changes to many
+  ;; buffers at once, and therefore cannot be reversed by `undo`, the
+  ;; default behavior of applying a code action without even telling
+  ;; the user which code action is to be performed, let alone asking
+  ;; for user confirmation, is really aggressive.
+  (setq lsp-auto-execute-action nil)
+
+  ;; I prefer to have the formatting applied when I save, not as I
+  ;; type.  The on-type formatting moves existing text as I'm working
+  ;; on it, and often mis-aligns text that I want to edit using
+  ;; `string-rectangle`.  In addition, because the on-type formatting
+  ;; runs asynchronously, it interacts very poorly with emacs macros,
+  ;; and may alter text as a macro is running.
+  (setq lsp-enable-on-type-formatting nil)
+
   ;; Avoid auto-insertion of closing braces and closing parentheses,
   ;; as they can show up in wildly unexpected places.
   ;;
