@@ -851,10 +851,15 @@
 (use-package cc-mode
   :ensure nil
   :mode ("\\.h$" . c++-mode)
-  :bind (:map c-mode-base-map
-              ;; ("C-c C-f" . ff-find-other-file)
-              ("C-j" . newline-and-indent)
-              ("C-c C-c" . find-makefile-compile))
+  :bind
+  (:map c-mode-base-map
+        ;; ("C-c C-f" . ff-find-other-file)
+        ("C-j" . newline-and-indent)
+        ("C-c C-c" . find-makefile-compile))
+  (:map c++-mode-map
+        ;; Disable "C-c C-a", which is bound by default to
+        ;; `c-toggle-auto-newline`.
+        ("C-c C-a" . nil))
 
   :config
   (c-toggle-auto-newline -1)
