@@ -522,76 +522,17 @@
 
 ;; For code-folding
 
-
-;; Not the most robust of defaults, but it's at least semi-functional.
-;; Unfortunately, lsp--get-folding-ranges doesn't give all the
-;; information available from the LSP server.  Improvements could be
-;; made to the `prev-chunk` to strip out comments/strings, and to
-;; search backward to the previous block start/end instead of just the
-;; beginning of the string.
-;;
-;; rust-analyzer collapses
-;; all information into "comment", "imports", "region", and
-;; "". (rust-analyzer/src/to_proto.rs::folding_range().
-;;
-;; clangd doesn't
-;; support folding ranges at all
-;; (https://github.com/clangd/clangd/issues/310).
-(defvar my-hideshow-default-regexes
-  '((:mode rust-mode :regex "^impl.* for " :action fold-children-then-fold)
-    (:mode rust-mode :regex "^impl" :action fold-children)
-    (:mode rust-mode :regex "^struct" :action no-fold)
-    (:mode rust-mode :regex "^use " :action no-fold)
-    (:mode rust-mode :regex "" :action fold-children)
-    )
-  "List of major-mode, regex, action"
-  )
-
-(defun my-hideshow-default ()
-  (defun prev-chunk (pos)
-    (buffer-substring-no-properties (line-beginning-position) (point))
-    )
-
-  (defun rule-applies (rule)
-    (let* ((rule-mode (plist-get rule ':mode))
-           (search-text (prev-chunk (point)))
-           (rule-regex (plist-get rule ':regex))
-           (matches-mode (eq rule-mode major-mode))
-           (matches-regex (string-match-p rule-regex search-text))
-           )
-      (and matches-mode matches-regex)
-      )
-    )
-
-  (when (hs-looking-at-block-start-p)
-    (let* ((rule (cl-find-if 'rule-applies my-hideshow-default-regexes))
-           (action (if rule (plist-get rule ':action) 'fold-children))
-           )
-
-      (cond ((eq action 'fold-children) (hs-hide-level 1) (forward-sexp))
-            ((eq action 'fold) (hs-hide-block-at-point) (forward-sexp))
-            ((eq action 'fold-children-then-fold)
-             (hs-hide-level 1) (hs-hide-block-at-point) (forward-sexp))
-            ((eq action 'no-fold) nil)
-            ('t (error "Unknown action: %s" action)))
-    ))
-  )
-
-
-
 (use-package fold-dwim
   :ensure t
   )
 
 (use-package hideshow
   :ensure nil
-  :hook ((rust-mode . hs-minor-mode)
-         (hs-minor-mode . hs-hide-all)
-         )
+  :hook ((rust-mode . hs-minor-mode))
   :bind (("C-c C-f" . fold-dwim-toggle))
   :config
   (setq hs-allow-nesting t)
-  (setq hs-hide-all-non-comment-function 'my-hideshow-default)
+  (setq hs-hide-all-non-comment-function nil)
   (add-to-list 'hs-special-modes-alist '(rust-mode "{" "}"))
 
   ;; Functions that jump into the middle of a block should expand that
