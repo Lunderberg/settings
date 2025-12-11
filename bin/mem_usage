@@ -28,7 +28,13 @@ def find_proc(
                 or proc.name() == name
                 or re.match(f"^{name}$", proc.name())
             ),
-            lambda: cmd_regex is None or re.search(cmd_regex, " ".join(proc.cmdline())),
+            lambda: (
+                cmd_regex is None
+                or (
+                    proc.status() != "zombie"
+                    and re.search(cmd_regex, " ".join(proc.cmdline()))
+                )
+            ),
         ]
         return all(filter() for filter in filters)
 
@@ -103,7 +109,6 @@ def show_proc(
             have_sufficient_permissions = False
             continue
 
-        # mem_usage_bytes += mem_info.pss
         mem_usage_bytes += mem_info.rss
 
     symbol = "==" if have_sufficient_permissions else ">="
