@@ -625,11 +625,6 @@
   :ensure nil
   :commands (ansi-color-apply-on-region))
 
-(defun colorize-compilation-buffer ()
-  (let ((buffer-read-only nil))
-    (ansi-color-apply-on-region (point-min) (point-max))
-    ))
-
 (defun colorize-current-buffer ()
   (interactive)
   (ansi-color-apply-on-region (point-min) (point-max)))
@@ -645,7 +640,7 @@
   ;; the GNU style, but relative to the build directory.
   (dolist (ignore '("CMakeFiles/.*/build.make" "CMakeFiles/Makefile2" "Makefile"))
     (add-to-list 'compilation-transform-file-match-alist (cons ignore nil)))
-  :hook (compilation-filter . colorize-compilation-buffer)
+  :hook (compilation-filter . ansi-color-compilation-filter)
   )
 
 (use-package make-mode
