@@ -143,7 +143,7 @@ alias cd..="cd .."
 # Build-system configurations
 export NUM_BUILD_JOBS=$(( $(nproc) * 3 / 4 ))
 export MAKEFLAGS="--no-print-directory -j${NUM_BUILD_JOBS}"
-if which ccache > /dev/null; then
+if which ccache > /dev/null 2> /dev/null; then
     export CMAKE_C_COMPILER_LAUNCHER=ccache
     export CMAKE_CXX_COMPILER_LAUNCHER=ccache
     export CMAKE_CUDA_COMPILER_LAUNCHER=ccache
