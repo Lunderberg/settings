@@ -7,3 +7,6 @@
 [submodule "external/settings-private"]
 	path = external/settings-private
 	url = git@github.com:Lunderberg/settings-private
+[submodule "nix-config/secrets"]
+	path = nix-config/secrets
+	url = git@github.com:Lunderberg/nix-config-secrets.git
