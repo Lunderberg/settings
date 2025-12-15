@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import urllib.request
@@ -21,15 +22,18 @@ install = installer.install
 repo_path = installer.repo_path
 sys_path = installer.sys_path
 
-
 def git_submodule_update():
-    subprocess.check_call(
+    exit_code = subprocess.call(
         ["git", "submodule", "update", "--init", "--recursive"],
         cwd=repo_path(),
     )
+    return exit_code==0
 
 
 def get_repo_clangd_version():
+    if shutil.which('apt-cache') is None:
+        return None
+
     lines = subprocess.check_output(
         ["apt-cache", "show", "clangd"], encoding="utf-8"
     ).split("\n")
@@ -53,7 +57,7 @@ def get_repo_clangd_version():
 
 def download_clangd():
     repo_version = get_repo_clangd_version()
-    if repo_version > (12, 0):
+    if repo_version is None or repo_version > (12, 0):
         return
 
     clangd_symlink = repo_path("bin", "clangd")
@@ -107,7 +111,10 @@ def install_ipython_env():
 
 def update_bashrc():
     bashrc_path = sys_path("~", ".bashrc")
-    orig_bashrc = open(bashrc_path).read()
+    try:
+        orig_bashrc = open(bashrc_path).read()
+    except FileNotFoundError:
+        orig_bashrc = ''
     bashrc = orig_bashrc
     if ".bash_common" not in bashrc:
         print("Adding .bash_common to .bashrc")
@@ -166,8 +173,8 @@ def main(args):
     update_bashrc()
     update_docker_config()
 
-    git_submodule_update()
-    run_private_install()
+    if git_submodule_update():
+        run_private_install()
 
 
 def arg_main():
