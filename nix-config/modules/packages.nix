@@ -12,6 +12,7 @@
       gnumake
       python3
       rsync
+      ruff
       rustup
       signal-desktop
       tmux
