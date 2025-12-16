@@ -33,7 +33,7 @@ def main(args):
             "--upgrade",
             "switch",
             "--flake",
-            flake,
+            f"path:{flake}",
         ]
         subprocess.check_call(cmd)
 
