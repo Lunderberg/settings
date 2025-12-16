@@ -1,0 +1,81 @@
+#! /usr/bin/env nix-shell
+#! -*- python -*-
+#! nix-shell -i python3 -p python3
+
+import argparse
+import contextlib
+import pathlib
+import socket
+import subprocess
+import sys
+
+
+def main(args):
+    flake = pathlib.Path(__file__).parent
+
+    if args.collect_hardware:
+        # Collect hardware description, only needs to be done once for
+        # a new computer.
+        hostname = socket.gethostname()
+        cmd = [
+            "nixos-generate-config",
+            "--show-hardware-config",
+        ]
+        output_filepath = flake.joinpath("hosts", "hardware", f"{hostname}.nix")
+        with open(output_filepath, "w") as output:
+            subprocess.check_call(cmd, stdout=output)
+
+    else:
+        # Default behavior, upgrade packages and switch environment.
+        cmd = [
+            "nixos-rebuild",
+            "--sudo",
+            "--upgrade",
+            "switch",
+            "--flake",
+            flake,
+        ]
+        subprocess.check_call(cmd)
+
+
+@contextlib.contextmanager
+def debug_on_except():
+    try:
+        yield
+    finally:
+        if isinstance(sys.exc_info()[1], Exception):
+            import traceback
+
+            try:
+                import ipdb as pdb
+            except ImportError:
+                import pdb
+
+            traceback.print_exc()
+            pdb.post_mortem()
+
+
+def arg_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--collect-hardware",
+        action="store_true",
+        help="Collect and save hardware description to `hosts/hardware/$HOSTNAME.nix`",
+    )
+    parser.add_argument(
+        "--pdb",
+        action="store_true",
+        help="Start a pdb post mortem on uncaught exception",
+    )
+
+    args = parser.parse_args()
+
+    with contextlib.ExitStack() as stack:
+        if args.pdb:
+            stack.enter_context(debug_on_except())
+
+        main(args)
+
+
+if __name__ == "__main__":
+    arg_main()
