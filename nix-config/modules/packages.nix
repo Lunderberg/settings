@@ -1,7 +1,8 @@
 { pkgs, ... }:
 {
-    environment.systemPackages =
-      with pkgs; [
+  environment.systemPackages =
+    with pkgs; [
+      chrpath
       clang
       clang-tools
       discord
@@ -16,14 +17,18 @@
       rustup
       signal-desktop
       tmux
+      tree
       uv
       vlc
       wget
     ];
 
-    # TODO: Update nix-index's bash integration to check for
-    # executables located somewhere other than `/bin/$CMD`.
-    programs.nix-index.enable = true;
+  # TODO: Update nix-index's bash integration to check for
+  # executables located somewhere other than `/bin/$CMD`.
+  programs.nix-index = {
+    enable = true;
+    enableBashIntegration = true;
+  };
 
-    programs.steam.enable = true;
+  programs.steam.enable = true;
 }
