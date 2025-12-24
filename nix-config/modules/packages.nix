@@ -11,6 +11,7 @@
       gcc
       git
       gnumake
+      nix-tree
       python3
       rsync
       ruff
