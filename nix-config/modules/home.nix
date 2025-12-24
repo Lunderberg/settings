@@ -9,6 +9,13 @@ let username = "eric";
   programs.home-manager.enable = true;
 
   home.packages = with pkgs; [
+    # Python environment
+    (python3.withPackages ( py: with py; [
+      ipdb
+      ipython
+      psutil
+    ]))
+
     # For wgpu programs in Rust
     libx11
     libxcursor
