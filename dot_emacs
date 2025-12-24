@@ -1179,6 +1179,11 @@
 
 (use-package wgsl-mode
     :mode "\\.wgsl$"
+    :ensure nil
+    ;; For bugfix in https://github.com/acowley/wgsl-mode/pull/6.
+    ;; Without it, `wgsl-mode` will attempt to load `c++-mode-hook`,
+    ;; and to initialize LSP mode.
+    :load-path "~/misc/wgsl-mode"
     )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
