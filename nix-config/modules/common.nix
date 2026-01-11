@@ -21,6 +21,15 @@
 
   system.stateVersion = "25.11";
 
+  services.avahi = {
+    enable = true;
+    nssmdns4 = true;
+    publish = {
+      enable = true;
+      addresses = true;
+    };
+  };
+
   services.xserver = {
     enable = true;
     displayManager.lightdm.enable = true;
