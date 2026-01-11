@@ -2,6 +2,7 @@
 {
   environment.systemPackages =
     with pkgs; [
+      bind.dnsutils
       chrpath
       clang
       clang-tools
@@ -11,7 +12,12 @@
       gcc
       git
       gnumake
+      keyutils
+      lm_sensors.bin
+      openssl
+      net-tools
       nix-tree
+      nmap
       python3
       rsync
       ruff
@@ -22,6 +28,7 @@
       uv
       vlc
       wget
+      zip
     ];
 
   # TODO: Update nix-index's bash integration to check for
