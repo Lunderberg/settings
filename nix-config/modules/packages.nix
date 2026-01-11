@@ -38,5 +38,9 @@
     enableBashIntegration = true;
   };
 
+  programs.gnupg.agent.enable = true;
+
   programs.steam.enable = true;
+
+  programs.zoom-us.enable = true;
 }
