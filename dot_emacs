@@ -724,6 +724,13 @@
   (setq lsp-progress-function 'ignore)
   )
 
+(use-package flymake
+  :config
+  ;; Showing LSP warnings in the margins take up way more horizontal
+  ;; space than I'd like in the terminal.
+  (setq flymake-autoresize-margins nil)
+  )
+
 ;; Add python language server.  Version of jedi is to maintain
 ;; compatibility with IPython 7.13 (ubuntu 20.04's apt version).
 ;; Latest PyPI version of ipython is compability with latest jedi.
