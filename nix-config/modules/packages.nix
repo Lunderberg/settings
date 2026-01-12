@@ -1,5 +1,7 @@
 { pkgs, ... }:
-{
+let
+  perf-patched = (pkgs.callPackage ./perf-with-addr2line.nix pkgs);
+in {
   environment.systemPackages =
     with pkgs; [
       bind.dnsutils
@@ -15,6 +17,7 @@
       keyutils
       lm_sensors.bin
       openssl
+      perf-patched
       net-tools
       nix-tree
       nmap
