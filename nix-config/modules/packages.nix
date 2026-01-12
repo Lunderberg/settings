@@ -11,6 +11,7 @@ in {
       discord
       ecryptfs
       emacs
+      file
       gcc
       git
       gnumake
