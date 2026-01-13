@@ -13,7 +13,11 @@ let username = "eric";
     (python3.withPackages ( py: with py; [
       ipdb
       ipython
+      matplotlib
+      numpy
+      pandas
       psutil
+      scipy
     ]))
 
     # For wgpu programs in Rust
