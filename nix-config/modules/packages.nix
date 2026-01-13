@@ -1,6 +1,15 @@
 { pkgs, ... }:
 let
   perf-patched = (pkgs.callPackage ./perf-with-addr2line.nix pkgs);
+  tmux-v36 = with pkgs; tmux.overrideAttrs (finalAttrs: previousAttrs: {
+    version = "3.6";
+    src = fetchFromGitHub {
+      owner = "tmux";
+      repo = "tmux";
+      rev = finalAttrs.version;
+      hash = "sha256-jIHnwidzqt+uDDFz8UVHihTgHJybbVg3pQvzlMzOXPE=";
+    };
+  });
 in {
   environment.systemPackages =
     with pkgs; [
@@ -27,7 +36,7 @@ in {
       ruff
       rustup
       signal-desktop
-      tmux
+      tmux-v36
       tree
       uv
       vlc
