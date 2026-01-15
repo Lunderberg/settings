@@ -5,6 +5,9 @@ set history save on
 set history size 10000
 set history filename ~/.gdb_history
 
+# Do not download debuginfo from external sources
+set debuginfod enabled off
+
 # Increase truncation limit for large prints (0 for unlimited)
 set print elements 10000
 
