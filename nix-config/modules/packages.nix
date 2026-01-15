@@ -17,15 +17,18 @@ in {
       chrpath
       clang
       clang-tools
+      cmake
       discord
       ecryptfs
       emacs
       file
       gcc
+      gdb
       git
       gnumake
       keyutils
       lm_sensors.bin
+      mold-wrapped
       openssl
       perf-patched
       net-tools
