@@ -114,7 +114,7 @@ alias dis='export $(tmux showenv | grep DISPLAY)'
 
 alias tm='tmux new-session -A -s0'
 
-eval $(dircolors ~/.dir_colors)
+eval $(dircolors ~/.dir_colors --bourne-shell)
 
 alias ec="emacsclient -a '' -c"
 alias en="emacsclient -a '' -n"
