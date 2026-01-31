@@ -44,6 +44,7 @@ in {
       uv
       vlc
       wget
+      xclip
       zip
     ];
 

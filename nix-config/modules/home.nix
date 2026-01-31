@@ -17,6 +17,7 @@ let username = "eric";
       numpy
       pandas
       psutil
+      pytest
       scipy
     ]))
 
