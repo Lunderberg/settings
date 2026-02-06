@@ -2,10 +2,11 @@
 
 import collections
 import os
+import pathlib
 import subprocess
 import sys
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Iterable, Union
 
 
 # Adapted from https://stackoverflow.com/a/59903465
@@ -170,10 +171,52 @@ class Runner:
         return "".join(parts)
 
 
+class DockerMount:
+    def __init__(
+        self,
+        src: Union[str, pathlib.Path],
+        dst: Optional[Union[str, pathlib.Path]] = None,
+    ):
+        self.src = pathlib.Path(src).resolve()
+
+        if dst is None:
+            dst = src
+        self.dst = pathlib.Path(dst).resolve()
+
+
 class DockerRunner(Runner):
-    def __init__(self, docker_image: str, *args, **kwargs):
+    def __init__(
+        self,
+        docker_image: str,
+        mounts: Optional[
+            Union[str, pathlib.Path, Iterable[Union[str, pathlib.Path]]]
+        ] = None,
+        *args,
+        **kwargs,
+    ):
         self.docker_image = docker_image
+        self.mounts = self._normalize_mounts(mounts)
         super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def _normalize_mounts(
+        arg_mounts: Optional[
+            Union[str, pathlib.Path, Iterable[Union[str, pathlib.Path]]]
+        ],
+    ) -> List[DockerMount]:
+        mounts = []
+        if arg_mounts is not None:
+            if isinstance(arg_mounts, Iterable) and not isinstance(arg_mounts, str):
+                iter_arg_mounts = iter(arg_mounts)
+            else:
+                iter_arg_mounts = iter((arg_mounts,))
+
+            for arg in iter_arg_mounts:
+                if not isinstance(arg, DockerMount):
+                    arg = DockerMount(arg)
+                mounts.append(arg)
+
+        return mounts
 
     def _normalize(
         self,
@@ -190,12 +233,17 @@ class DockerRunner(Runner):
 
         env_flags = [f"--env={key}={value}" for key, value in env.items()]
 
+        mount_flags = [
+            f"--mount=type=bind,src={mnt.src},dst={mnt.dst}" for mnt in self.mounts
+        ]
+
         cmd = [
             "docker",
             "run",
             "--rm",
             *io_flags,
             *env_flags,
+            *mount_flags,
             self.docker_image,
             *orig_cmd,
         ]
@@ -377,6 +425,24 @@ if "PYTEST_VERSION" in os.environ:
         )
 
         expected = "docker run --rm --env=ENVVAR=value image command arg"
+        assert cmd == expected
+
+    @pytest.mark.parametrize("mount_type", [str, pathlib.Path, DockerMount])
+    def test_docker_mount(without_interactive_tty, mount_type):
+        runner = DockerRunner(
+            "image",
+            pretty_print=False,
+            mounts=mount_type("mnt_dir"),
+        )
+        cmd = runner._format_cmd(["command", "arg"])
+
+        abs_mount = pathlib.Path.cwd().joinpath("mnt_dir")
+
+        expected = (
+            f"docker run --rm "
+            f"--mount=type=bind,src={abs_mount},dst={abs_mount} "
+            f"image command arg"
+        )
         assert cmd == expected
 
 elif __name__ == "__main__":
