@@ -60,4 +60,9 @@ in {
   programs.steam.enable = true;
 
   programs.zoom-us.enable = true;
+
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;
+  };
 }
