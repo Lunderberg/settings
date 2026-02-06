@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import collections
+import functools
 import os
 import pathlib
 import subprocess
@@ -191,11 +192,13 @@ class DockerRunner(Runner):
         mounts: Optional[
             Union[str, pathlib.Path, Iterable[Union[str, pathlib.Path]]]
         ] = None,
+        as_root: bool = False,
         *args,
         **kwargs,
     ):
         self.docker_image = docker_image
         self.mounts = self._normalize_mounts(mounts)
+        self.as_root = as_root
         super().__init__(*args, **kwargs)
 
     @staticmethod
@@ -218,6 +221,33 @@ class DockerRunner(Runner):
 
         return mounts
 
+    @staticmethod
+    @functools.cache
+    def _docker_is_rootful() -> Optional[bool]:
+        """Check if the docker installation defaults to root
+
+        Returns
+        -------
+        is_rootful: Optional[bool]
+
+            True if the docker installation defaults to root.  False
+            for sane docker installations (i.e. non-default "rootless"
+            installs, or "podmand" aliased to docker) that do not
+            default to root.
+
+            If no docker installation is located, returns `None`.
+
+        """
+        try:
+            output = subprocess.check_output(
+                ["docker", "info", "-f", "{{ .Host.Security.Rootless }}"],
+                encoding="utf-8",
+            )
+        except FileNotFoundError:
+            return None
+
+        return output.strip() != "true"
+
     def _normalize(
         self,
         cmd: List[str],
@@ -237,6 +267,12 @@ class DockerRunner(Runner):
             f"--mount=type=bind,src={mnt.src},dst={mnt.dst}" for mnt in self.mounts
         ]
 
+        abdicate_root_flags = []
+        if self._docker_is_rootful() in (None, True) and not self.as_root:
+            uid = os.getuid()
+            gid = os.getgid()
+            abdicate_root_flags.append(f"--user={uid}:{gid}")
+
         cmd = [
             "docker",
             "run",
@@ -244,6 +280,7 @@ class DockerRunner(Runner):
             *io_flags,
             *env_flags,
             *mount_flags,
+            *abdicate_root_flags,
             self.docker_image,
             *orig_cmd,
         ]
@@ -377,9 +414,23 @@ if "PYTEST_VERSION" in os.environ:
         """).strip()
         assert cmd == expected
 
+    @pytest.fixture
+    def rootless_docker(monkeypatch):
+        """Fixture to test as if the docker installation is rootless
+
+        This simplfies test cases, since the `--user` flag is not
+        produced, and doesn't need to be specified in the expected
+        output for unrelated test cases.
+        """
+        monkeypatch.setattr(
+            DockerRunner,
+            "_docker_is_rootful",
+            staticmethod(lambda: False),
+        )
+
     @pytest.mark.parametrize("stdin", ["stdin", ""])
     @pytest.mark.parametrize("stdout", ["stdout", ""])
-    def test_docker_run(monkeypatch, stdin: str, stdout: str):
+    def test_docker_run(monkeypatch, rootless_docker, stdin: str, stdout: str):
         monkeypatch.setattr(
             sys,
             "stdin",
@@ -417,7 +468,7 @@ if "PYTEST_VERSION" in os.environ:
             types.SimpleNamespace(isatty=lambda: False),
         )
 
-    def test_docker_env(without_interactive_tty):
+    def test_docker_env(without_interactive_tty, rootless_docker):
         runner = DockerRunner("image", pretty_print=False)
         cmd = runner._format_cmd(
             ["command", "arg"],
@@ -428,7 +479,7 @@ if "PYTEST_VERSION" in os.environ:
         assert cmd == expected
 
     @pytest.mark.parametrize("mount_type", [str, pathlib.Path, DockerMount])
-    def test_docker_mount(without_interactive_tty, mount_type):
+    def test_docker_mount(without_interactive_tty, rootless_docker, mount_type):
         runner = DockerRunner(
             "image",
             pretty_print=False,
@@ -444,6 +495,43 @@ if "PYTEST_VERSION" in os.environ:
             f"image command arg"
         )
         assert cmd == expected
+
+    def test_docker_rootless(monkeypatch):
+        monkeypatch.setattr(
+            DockerRunner,
+            "_docker_is_rootful",
+            staticmethod(lambda: True),
+        )
+
+        runner = DockerRunner(
+            "image",
+            pretty_print=False,
+            as_root=False,
+        )
+        cmd = runner._format_cmd(["command", "arg"])
+
+        assert "--user" in cmd
+
+    def test_docker_rootful(monkeypatch):
+        """
+        When running in an installation with rootful docker, if
+        `as_root` is set, then the `--user` flag should not be
+        present.
+        """
+        monkeypatch.setattr(
+            DockerRunner,
+            "_docker_is_rootful",
+            staticmethod(lambda: True),
+        )
+
+        runner = DockerRunner(
+            "image",
+            pretty_print=False,
+            as_root=True,
+        )
+        cmd = runner._format_cmd(["command", "arg"])
+
+        assert "--user" not in cmd
 
 elif __name__ == "__main__":
     import sys
