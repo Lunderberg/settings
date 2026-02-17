@@ -28,10 +28,14 @@ in {
       gnumake
       keyutils
       lm_sensors.bin
+      mediainfo
       mold-wrapped
       openssl
       perf-patched
+      pkg-config
+      pinta
       net-tools
+      ninja
       nix-tree
       nmap
       python3
