@@ -132,7 +132,9 @@ alias grab_makefile='wget --no-cache https://raw.githubusercontent.com/Lunderber
 alias grab_ensure_venv='wget --no-cache https://raw.githubusercontent.com/Lunderberg/ensure_venv/master/ensure_venv.py'
 
 export LESS="--no-init --quit-if-one-screen --raw-control-chars"
-alias more="less"
+if which less > /dev/null 2> /dev/null; then
+    alias more="less"
+fi
 
 alias grep='grep --color=auto'
 alias py='python3 -mIPython'
