@@ -55,6 +55,8 @@ in {
     enableBashIntegration = true;
   };
 
+  programs.nix-ld.enable = true;
+
   programs.gnupg.agent.enable = true;
 
   programs.steam.enable = true;
