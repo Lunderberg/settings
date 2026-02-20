@@ -880,8 +880,42 @@
 (use-package lsp-clangd
   :ensure nil
   :config
-  (setq lsp-clients-clangd-args
-        (append-to-list `lsp-clients-clangd-args '("--query-driver=/usr/bin/**"))))
+
+  ;; Because clangd does not automatically query the driver (see
+  ;; https://github.com/clangd/clangd/issues/539), must explicitly
+  ;; give it permission to call the underlying compiler.  Even though
+  ;; that compiler had just been executed anyways, and clangd is
+  ;; running under the exact same user permissions as would be able to
+  ;; execute the actual compiler.
+  (append-to-list `lsp-clients-clangd-args '("--query-driver=/usr/bin/**"))
+
+  ;; clangd resolves symlinks to source files.  However, in many cases
+  ;; the symlinks should be treated as the canonical path to the source
+  ;; file.  These are defined in emacs by `directory-abbrev-alist`,
+  ;; but aren't exposed anywhere to clangd.  These result in duplicate
+  ;; references tracked by clangd, as symbol uses and definitions are
+  ;; erroneously duplicated between the canonical symlinked path and
+  ;; the non-canonical absolute path.
+  ;;
+  ;; For example, the references listed in `lsp-find-references` are
+  ;; duplicated, and changes made by `lsp-rename` are applied twice.
+  ;;
+  ;; The `--path-mappings` argument is the best way I've found to
+  ;; expose `directory-abbrev-alist` to clangd.  Unfortunately, it can
+  ;; only be set when clangd is being started, and can't be updated
+  ;; if `directory-abbrev-alist` changes later, but this resolves the majority of issues.
+  (let* ((mappings (mapconcat
+                    (lambda (pair) (format "%s=%s" (cdr pair) (car pair)))
+                    directory-abbrev-alist
+                    ","))
+         (arg (format "--path-mappings=%s" mappings))
+         )
+      (append-to-list
+        `lsp-clients-clangd-args
+        (list arg)
+      )
+    )
+  )
 
 (use-package cuda-mode
   :ensure t
