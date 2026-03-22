@@ -8,7 +8,12 @@
   users.users.eric = {
     isNormalUser = true;
     description = "Eric";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "scanner"
+      "lp"
+    ];
     packages = with pkgs; [
     ];
   };
@@ -56,4 +61,6 @@
       PermitRootLogin = "no";
     };
   };
+
+  hardware.sane.enable = true;
 }
