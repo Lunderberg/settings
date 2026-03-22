@@ -50,8 +50,19 @@ let username = "eric";
        # `sessionVariables` are only seen on the next login.
        if [ -f ~/.profile ]; then . ~/.profile; fi
 
-       # Load standard configurations that are used on Nix and non-Nix platforms
+       # Load standard configurations that are used on Nix and
+       # non-Nix platforms
        if [ -f ~/.bash_common ]; then . ~/.bash_common; fi
+
+       # Preserve the home python environment when running gdb.
+       # When debugging compiled python modules, Nix's gdb will
+       # launch python using the active python environment for
+       # the first execution, but the next execution (from the
+       # `run` command) will instead use the python installation
+       # associated with `gdb` in the nix store.  This alias
+       # overrides that default, in order to have the correct
+       # environment for all python executions.
+       alias gdb='PYTHONHOME=$(python3 -c "import sys; print(sys.prefix)") gdb'
      '';
   };
 }
