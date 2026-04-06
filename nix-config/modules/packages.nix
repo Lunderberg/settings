@@ -27,6 +27,7 @@ in {
       git
       gnumake
       keyutils
+      libsecret
       lingot
       lm_sensors.bin
       mediainfo

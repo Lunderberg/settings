@@ -17,8 +17,10 @@ let username = "eric";
       numpy
       pandas
       psutil
+      pycryptodome
       pytest
       scipy
+      sqlcipher3
     ]))
 
     # For wgpu programs in Rust
