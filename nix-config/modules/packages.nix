@@ -27,6 +27,7 @@ in {
       git
       gnumake
       keyutils
+      lingot
       lm_sensors.bin
       mediainfo
       mold-wrapped
@@ -38,14 +39,17 @@ in {
       ninja
       nix-tree
       nmap
+      pstree
       python3
       rsync
       ruff
       rustup
       signal-desktop
+      simple-scan
       tmux-v36
       tree
       uv
+      valgrind
       vlc
       wget
       xclip
