@@ -65,4 +65,45 @@ let username = "eric";
        alias gdb='PYTHONHOME=$(python3 -c "import sys; print(sys.prefix)") gdb'
      '';
   };
+
+
+  fonts.fontconfig.enable = true;
+
+  xdg.configFile = {
+    "fontconfig/conf.d/80-braille-without-dots.conf".text = ''
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+      <fontconfig>
+        <match target="scan">
+          <test name="family" compare="eq">
+            <string>FreeMono</string>
+          </test>
+          <edit name="charset" mode="assign">
+            <minus>
+              <name>range</name>
+              <charset>
+                <range>
+                  <int>0x2800</int>
+                  <int>0x28FF</int>
+                </range>
+              </charset>
+            </minus>
+          </edit>
+        </match>
+      </fontconfig>
+    '';
+
+  };
+
+  programs.gnome-terminal = {
+    enable = true;
+    # Profile name must be a UUID
+    # Generate with `nix-shell '<nixpkgs>' -A util-linux --run uuidgen`
+    profile.e59c72ff-c232-4963-a861-334ffff69e25 = {
+      default = true;
+      visibleName = "my-config";
+      font = "Monospace 10";
+      audibleBell = false;
+    };
+  };
 }

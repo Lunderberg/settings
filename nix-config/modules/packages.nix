@@ -71,4 +71,6 @@ in {
     enable = true;
     dockerCompat = true;
   };
+
+  fonts.fontDir.enable = true;
 }
