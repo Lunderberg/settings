@@ -27,6 +27,7 @@ def main(args):
 
     else:
         # Default behavior, upgrade packages and switch environment.
+        update_flags = ["--recreate-lock-file"] if args.update else []
         cmd = [
             "nixos-rebuild",
             "--sudo",
@@ -35,6 +36,7 @@ def main(args):
             "switch",
             "--flake",
             f"path:{flake}",
+            *update_flags,
         ]
         subprocess.check_call(cmd)
 
@@ -62,6 +64,11 @@ def arg_main():
         "--collect-hardware",
         action="store_true",
         help="Collect and save hardware description to `hosts/hardware/$HOSTNAME.nix`",
+    )
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Update the ",
     )
     parser.add_argument(
         "--pdb",
