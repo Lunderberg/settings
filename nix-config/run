@@ -31,6 +31,7 @@ def main(args):
             "nixos-rebuild",
             "--sudo",
             "--upgrade",
+            "--show-trace",
             "switch",
             "--flake",
             f"path:{flake}",
