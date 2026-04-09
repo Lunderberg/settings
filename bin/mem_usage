@@ -2,6 +2,7 @@
 
 import argparse
 import contextlib
+import dataclasses
 import itertools
 import os
 import re
@@ -46,6 +47,25 @@ def find_proc(
         return None
 
 
+@dataclasses.dataclass
+class FormattedBytes:
+    bytes: int
+
+    def __str__(self):
+        if self.bytes > 1024**3:
+            unit = 1024**3
+            unit_str = "GB"
+        elif self.bytes > 1024**2:
+            unit = 1024**2
+            unit_str = "MB"
+        else:
+            unit = 1024
+            unit_str = "kB"
+
+        with_unit = self.bytes / unit
+        return f"{self.bytes} bytes ({with_unit:.2f} {unit_str})"
+
+
 def main(args):
     kwargs = dict(
         pid=args.pid,
@@ -76,10 +96,9 @@ def show_total():
         mem_usage_bytes += mem_info.rss
 
     symbol = "==" if have_sufficient_permissions else ">="
-    mem_usage_gigabytes = mem_usage_bytes / (1024**3)
-    print(
-        f"Total memory usage {symbol} {mem_usage_bytes} bytes ({mem_usage_gigabytes:.2f} GB)"
-    )
+    display_bytes = FormattedBytes(mem_usage_bytes)
+
+    print(f"Total memory usage {symbol} {display_bytes}")
 
 
 def show_proc(
@@ -112,11 +131,9 @@ def show_proc(
         mem_usage_bytes += mem_info.rss
 
     symbol = "==" if have_sufficient_permissions else ">="
-    mem_usage_gigabytes = mem_usage_bytes / (1024**3)
+    display_bytes = FormattedBytes(mem_usage_bytes)
 
-    print(
-        f"{print_name}Memory usage {symbol} {mem_usage_bytes} bytes ({mem_usage_gigabytes:.2f} GB)"
-    )
+    print(f"{print_name}Memory usage {symbol} {display_bytes}")
 
 
 @contextlib.contextmanager
