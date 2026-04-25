@@ -19,8 +19,10 @@ let username = "eric";
       psutil
       pycryptodome
       pytest
+      requests
       scipy
       sqlcipher3
+      tqdm
     ]))
 
     # For wgpu programs in Rust
