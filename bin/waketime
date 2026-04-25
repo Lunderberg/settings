@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+# Prints the most recent time that the computer resumed from sleep.
+
+journalctl -r --system --grep "Starting Post-Resume Actions" -n1 -o short-iso | awk '{print $1;}'
