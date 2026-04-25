@@ -40,7 +40,13 @@ in {
       ninja
       nix-tree
       nmap
-      pstree
+      # The `pstree` and `psmisc` packages both provide the `pstree`
+      # executable.  However, the `pstree` package builds it from a
+      # different source.  Based on
+      # https://github.com/NixOS/nixpkgs/issues/61725, the `pstree`
+      # package is largely kept around for cross-OS compatibility,
+      # while the `psmisc` package should be used by Linux distros.
+      psmisc
       python3
       rsync
       ruff
