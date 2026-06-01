@@ -688,12 +688,11 @@
   ;; `string-rectangle`.  In addition, because the on-type formatting
   ;; runs asynchronously, it interacts very poorly with emacs macros,
   ;; and may alter text as a macro is running.
-  (setq lsp-enable-on-type-formatting nil)
-
-  ;; Avoid auto-insertion of closing braces and closing parentheses,
-  ;; as they can show up in wildly unexpected places.
   ;;
-  ;; See https://github.com/rust-lang/rust-analyzer/issues/16084
+  ;; This also avoid auto-insertion of closing braces and closing
+  ;; parentheses, as they can show up in wildly unexpected
+  ;; places. (See
+  ;; https://github.com/rust-lang/rust-analyzer/issues/16084)
   (setq lsp-enable-on-type-formatting nil)
 
   (lsp-register-client
