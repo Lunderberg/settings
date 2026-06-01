@@ -1,9 +1,12 @@
 [target.x86_64-unknown-linux-gnu]
-# For gcc 12.1.0 or higher
-# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
 
-# For gcc older than 12.1.0
-rustflags = ["-C", "link-arg=-B/usr/local/libexec/mold"]
+rustflags = [
+    # For gcc 12.1.0 or higher
+    "-C", "link-arg=-fuse-ld=mold",
+
+    # For gcc older than 12.1.0
+    # "-C", "link-arg=-B/usr/local/libexec/mold",
+]
 
 [build]
 incremental = false
