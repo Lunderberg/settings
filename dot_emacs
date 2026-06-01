@@ -1053,29 +1053,62 @@
                ))
   )
 
-;; Auto-format using `black`
-;;     python3 -mpip install black
-;;
-;; (use-package blacken
-;;   :ensure t
-;;   :hook (python-mode . blacken-mode))
 
 ;; Auto-format using `ruff format`.
 ;;    python3 -mpip install ruff
 (when (= 0 (call-process-shell-command "which ruff" nil nil nil))
-  (use-package reformatter
+  ;; Use `apheleia` instead of `reformatter` to avoid triggering an
+  ;; error message of `(wrong-type-argument stringp nil)` from
+  ;; `emacs-lsp`.
+  ;;
+  ;; The `reformatter` package uses `insert-file-contents` to update
+  ;; the buffer with the formatted contents.  This triggers the
+  ;; on-change hooks in `emacs-lsp`, which save the result of
+  ;; `(buffer-file-name)` in order to associate the
+  ;; `textDocument/diagnostic` response with the correct file.
+  ;; However, `insert-file-contents` temporarily overrides
+  ;; `(buffer-file-name)` to return `nil`, in order to avoid
+  ;; triggering the "This file was modified, are you sure you want to
+  ;; edit the buffer?" dialogue, and so the `nil` value gets
+  ;; propagated along.
+  ;;
+  ;; As of 2026-06-01, here's a closed `reformatter` issue [0], an
+  ;; open `emacs-lsp` issue [1], and an emacs commit that this issue
+  ;; [2].  However, the emacs change isn't available in the latest
+  ;; 30.2 release, and so the easiest workaround for now is to switch
+  ;; to `apheleia` instead of `reformatter`.  Since `apheleia` applies
+  ;; the reformatting as a series of deltas to apply, rather than a
+  ;; single `insert-file-contents`, it doesn't trigger the same error
+  ;; message.
+  ;;
+  ;; [0] https://github.com/purcell/emacs-reformatter/issues/63
+  ;; [1] https://github.com/emacs-lsp/lsp-mode/issues/4782
+  ;; [2] https://github.com/emacs-mirror/emacs/commit/6c0bbf0f
+
+  (use-package apheleia
     :ensure t
     :hook
-    (python-mode . ruff-format-on-save-mode)
+    (python-mode . apheleia-mode)
     :config
-    (reformatter-define ruff-format
-                        :program "ruff"
-                        :args `("format" "--stdin-filename" ,buffer-file-name "-")))
+    ;; Change from the default `black` formatter to `ruff format`.
+    ;;
+    ;; While `ruff-isort` is also available in apheleia, I can't find
+    ;; a way to have it preserve existing groups of imports.  It does
+    ;; have a lot of config options for specify sections within a
+    ;; project[0], but that sort of setup is a bit overkill for
+    ;; one-off scripts.  Maybe when I have a bit more time to fiddle
+    ;; with it.
+    ;;
+    ;; [0] https://docs.astral.sh/ruff/settings/#lintisort
+    (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff))
+    )
 
   (use-package flymake-ruff
     :ensure t
     :hook (python-mode . flymake-ruff-load))
   )
+
+
 
 
 
