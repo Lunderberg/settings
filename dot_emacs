@@ -712,6 +712,19 @@
       :major-modes '(python-mode)
       :add-on? t
       :server-id 'ruff))
+
+  ;; Disable multi-root workspaces.  Just because I've opened a python
+  ;; project once doesn't mean that the LSP should forever onward
+  ;; attempt to open that project each time it starts.  (And certainly
+  ;; not to give an error message if the old project no longer
+  ;; exists.)
+  ;;
+  ;; From https://emacs-lsp.github.io/lsp-mode/page/faq/#how-do-i-force-lsp-mode-to-forget-the-workspace-folders-for-multi-root-servers-so-the-workspace-folders-are-added-on-demand
+  (advice-add
+   'lsp :before
+   (lambda (&rest _args)
+     (eval '(setf (lsp-session-server-id->folders (lsp-session)) (ht)))))
+
   )
 
 (use-package lsp-ui
