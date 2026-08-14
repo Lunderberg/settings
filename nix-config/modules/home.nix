@@ -10,19 +10,21 @@ let username = "eric";
 
   home.packages = with pkgs; [
     # Python environment
-    (python3.withPackages ( py: with py; [
-      ipdb
-      ipython
+    (python314.withPackages ( py: with py; [
+      drawsvg
+      # ipdb
+      # ipython
       matplotlib
       numpy
       pandas
       psutil
       pycryptodome
       pytest
+      qrcode
       requests
       scipy
       sqlcipher3
-      tqdm
+      # tqdm
     ]))
 
     # For wgpu programs in Rust

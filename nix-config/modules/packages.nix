@@ -47,7 +47,7 @@ in {
       # package is largely kept around for cross-OS compatibility,
       # while the `psmisc` package should be used by Linux distros.
       psmisc
-      python3
+      # python314
       rsync
       ruff
       rustup
