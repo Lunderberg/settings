@@ -21,13 +21,16 @@ in {
       discord
       ecryptfs
       emacs
+      ffmpeg-headless
       file
       gcc
       gdb
       git
       gnumake
+      imagemagick
       keyutils
       libsecret
+      libreoffice
       lingot
       lm_sensors.bin
       mediainfo
