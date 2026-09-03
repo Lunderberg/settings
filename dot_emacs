@@ -1,9 +1,5 @@
 ;; -*-Lisp-*-
 
-;; (require 'warnings)
-
-;; (add-to-list 'load-path "~/.emacs.d/misc")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;    Package Management         ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
