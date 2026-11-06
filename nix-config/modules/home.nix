@@ -9,11 +9,11 @@ let username = "eric";
   programs.home-manager.enable = true;
 
   home.packages = with pkgs; [
-    # Python environment
     (python314.withPackages ( py: with py; [
+      beautifulsoup4
       drawsvg
-      # ipdb
-      # ipython
+      ipdb
+      ipython
       matplotlib
       numpy
       pandas
@@ -24,7 +24,7 @@ let username = "eric";
       requests
       scipy
       sqlcipher3
-      # tqdm
+      tqdm
     ]))
 
     # For wgpu programs in Rust
