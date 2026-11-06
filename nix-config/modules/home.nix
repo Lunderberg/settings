@@ -72,6 +72,11 @@ let username = "eric";
      '';
   };
 
+  programs.git = {
+    enable = true;
+    lfs.enable = true;
+  };
+
 
   fonts.fontconfig.enable = true;
 

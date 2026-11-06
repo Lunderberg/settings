@@ -18,15 +18,18 @@ in {
       clang
       clang-tools
       cmake
+      crun
       discord
-      ecryptfs
+      e2fsprogs
       emacs
       ffmpeg-headless
       file
       gcc
       gdb
       git
+      git-lfs
       gnumake
+      html-tidy
       imagemagick
       keyutils
       libsecret
@@ -34,8 +37,10 @@ in {
       lingot
       lm_sensors.bin
       mediainfo
-      mold-wrapped
+      mold
+      nsjail
       openssl
+      peek
       perf-patched
       pkg-config
       pinta
@@ -58,11 +63,14 @@ in {
       simple-scan
       tmux-v36
       tree
+      unzip
       uv
       valgrind
+      virtualgl
       vlc
       wget
       xclip
+      xwininfo
       zip
     ];
 
